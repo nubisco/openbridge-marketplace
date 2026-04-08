@@ -1,3 +1,10 @@
+## [1.0.5](https://github.com/nubisco/openbridge-marketplace/compare/v1.0.4...v1.0.5) (2026-04-08)
+
+
+### Bug Fixes
+
+* **marketplace:** icons on cards, keywords parsing, filter unrelated packages ([ffdc99a](https://github.com/nubisco/openbridge-marketplace/commit/ffdc99adc76f8e267e1e58239b33b1a499ef3733))
+
 ## [1.0.4](https://github.com/nubisco/openbridge-marketplace/compare/v1.0.3...v1.0.4) (2026-04-08)
 
 
