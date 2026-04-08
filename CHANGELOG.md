@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/nubisco/openbridge-marketplace/compare/v1.0.3...v1.0.4) (2026-04-08)
+
+
+### Bug Fixes
+
+* **crawler:** add exponential backoff retry on npm 429 rate limit ([80f8f21](https://github.com/nubisco/openbridge-marketplace/commit/80f8f211fa9877cd3b867881129947e152223e9b))
+
 ## [1.0.3](https://github.com/nubisco/openbridge-marketplace/compare/v1.0.2...v1.0.3) (2026-04-08)
 
 
