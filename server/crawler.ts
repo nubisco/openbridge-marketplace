@@ -17,16 +17,35 @@ const NPM_DOWNLOADS = 'https://api.npmjs.org/downloads'
 const PAGE_SIZE = 250
 const PREFIXES = ['homebridge-', 'openbridge-']
 
+async function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function fetchWithRetry(url: string, retries = 5, baseDelayMs = 5_000): Promise<Response> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const res = await fetch(url)
+    if (res.status !== 429) return res
+
+    if (attempt === retries) return res // let caller handle final 429
+
+    const retryAfter = Number(res.headers.get('retry-after') ?? 0)
+    const delay = retryAfter > 0 ? retryAfter * 1000 : baseDelayMs * 2 ** attempt
+    console.log(`  429 rate limited — retrying in ${Math.round(delay / 1000)}s (attempt ${attempt + 1}/${retries})`)
+    await sleep(delay)
+  }
+  throw new Error('unreachable')
+}
+
 async function fetchSearchPage(text: string, from: number): Promise<NpmSearchResult> {
   const url = `${NPM_SEARCH}?text=${encodeURIComponent(text)}&size=${PAGE_SIZE}&from=${from}`
-  const res = await fetch(url)
+  const res = await fetchWithRetry(url)
   if (!res.ok) throw new Error(`npm search failed: ${res.status}`)
   return res.json() as Promise<NpmSearchResult>
 }
 
 async function fetchPackageDetail(name: string): Promise<NpmPackageDetail | null> {
   try {
-    const res = await fetch(`${NPM_REGISTRY}/${encodeURIComponent(name)}`)
+    const res = await fetchWithRetry(`${NPM_REGISTRY}/${encodeURIComponent(name)}`)
     if (!res.ok) return null
     return res.json() as Promise<NpmPackageDetail>
   } catch {
@@ -36,7 +55,7 @@ async function fetchPackageDetail(name: string): Promise<NpmPackageDetail | null
 
 async function fetchWeeklyDownloads(name: string): Promise<number> {
   try {
-    const res = await fetch(`${NPM_DOWNLOADS}/point/last-week/${encodeURIComponent(name)}`)
+    const res = await fetchWithRetry(`${NPM_DOWNLOADS}/point/last-week/${encodeURIComponent(name)}`)
     if (!res.ok) return 0
     const data = (await res.json()) as { downloads?: number }
     return data.downloads ?? 0
