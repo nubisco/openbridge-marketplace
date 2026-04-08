@@ -1,0 +1,201 @@
+<template>
+  <div>
+    <!-- Hero search -->
+    <div class="hero">
+      <h1 class="hero__title">Find Openbridge & Homebridge Plugins</h1>
+      <p class="hero__sub">{{ stats?.plugin_count?.toLocaleString() ?? '…' }} plugins · community-rated</p>
+      <div class="hero__search">
+        <NbTextInput
+          v-model="q"
+          placeholder="Search plugins…"
+          size="lg"
+          class="search-input"
+          @input="onSearch"
+        />
+      </div>
+      <div class="hero__sort">
+        <NbButton :variant="sort === 'downloads' ? 'primary' : 'ghost'" size="sm" @click="sort = 'downloads'">Most downloaded</NbButton>
+        <NbButton :variant="sort === 'rating' ? 'primary' : 'ghost'" size="sm" @click="sort = 'rating'">Top rated</NbButton>
+        <NbButton :variant="sort === 'updated' ? 'primary' : 'ghost'" size="sm" @click="sort = 'updated'">Recently updated</NbButton>
+      </div>
+    </div>
+
+    <!-- Plugin grid -->
+    <div v-if="loading" class="state-msg">Loading…</div>
+    <div v-else-if="!plugins.length" class="state-msg">No plugins found.</div>
+    <div v-else class="plugin-grid">
+      <RouterLink
+        v-for="p in plugins"
+        :key="p.name"
+        :to="`/plugins/${p.name}`"
+        class="plugin-card"
+      >
+        <div class="plugin-card__head">
+          <span class="plugin-card__name">{{ p.name }}</span>
+          <NbBadge v-if="p.verified" variant="green" size="sm">Verified</NbBadge>
+        </div>
+        <p class="plugin-card__desc">{{ p.description ?? 'No description.' }}</p>
+        <div class="plugin-card__meta">
+          <span>v{{ p.version }}</span>
+          <span>{{ p.weekly_downloads.toLocaleString() }} /wk</span>
+          <span v-if="p.rating_avg">⭐ {{ p.rating_avg }} ({{ p.rating_count }})</span>
+        </div>
+      </RouterLink>
+    </div>
+
+    <!-- Pagination -->
+    <div v-if="total > limit" class="pagination">
+      <NbButton :disabled="page === 1" variant="ghost" size="sm" @click="page--">Previous</NbButton>
+      <span>Page {{ page }} of {{ Math.ceil(total / limit) }}</span>
+      <NbButton :disabled="page >= Math.ceil(total / limit)" variant="ghost" size="sm" @click="page++">Next</NbButton>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, watch } from 'vue'
+import type { PluginSummary } from '../../shared/types'
+
+const q = ref('')
+const sort = ref<'downloads' | 'rating' | 'updated'>('downloads')
+const page = ref(1)
+const limit = 24
+const plugins = ref<PluginSummary[]>([])
+const total = ref(0)
+const loading = ref(false)
+const stats = ref<{ plugin_count: number; review_count: number } | null>(null)
+
+let searchTimeout: ReturnType<typeof setTimeout>
+function onSearch() {
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => { page.value = 1 }, 300)
+}
+
+async function fetchPlugins() {
+  loading.value = true
+  try {
+    const params = new URLSearchParams({ q: q.value, sort: sort.value, page: String(page.value), limit: String(limit) })
+    const res = await fetch(`/api/plugins?${params}`)
+    const data = await res.json()
+    plugins.value = data.plugins
+    total.value = data.total
+  } finally {
+    loading.value = false
+  }
+}
+
+async function fetchStats() {
+  const res = await fetch('/api/stats')
+  stats.value = await res.json()
+}
+
+watch([q, sort, page], fetchPlugins, { immediate: true })
+fetchStats()
+</script>
+
+<style lang="scss" scoped>
+.hero {
+  text-align: center;
+  padding: 3rem 0 2rem;
+}
+
+.hero__title {
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0 0 0.5rem;
+}
+
+.hero__sub {
+  color: var(--nb-c-text-subtle);
+  margin: 0 0 1.5rem;
+}
+
+.hero__search {
+  max-width: 560px;
+  margin: 0 auto 1rem;
+}
+
+.search-input {
+  width: 100%;
+}
+
+.hero__sort {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.plugin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.plugin-card {
+  background: var(--nb-c-surface);
+  border: 1px solid var(--nb-c-component-plain-border);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:hover {
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.08);
+  }
+}
+
+.plugin-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.plugin-card__name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--nb-c-text);
+  font-family: monospace;
+}
+
+.plugin-card__desc {
+  font-size: 0.82rem;
+  color: var(--nb-c-text-subtle);
+  margin: 0;
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.plugin-card__meta {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--nb-c-text-subtle);
+  margin-top: 0.25rem;
+}
+
+.state-msg {
+  text-align: center;
+  padding: 4rem;
+  color: var(--nb-c-text-subtle);
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  font-size: 0.875rem;
+  color: var(--nb-c-text-subtle);
+}
+</style>
