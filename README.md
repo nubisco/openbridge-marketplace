@@ -1,6 +1,6 @@
 # Openbridge Marketplace
 
-Public plugin directory for [homebridge-*](https://www.npmjs.com/search?q=homebridge-) and [openbridge-*](https://www.npmjs.com/search?q=openbridge-) npm packages. Similar in concept to the VS Code Marketplace — browse, search, and rate plugins. Deployed at **marketplace.openbridge.nubisco.io**.
+Public plugin directory for [homebridge-\*](https://www.npmjs.com/search?q=homebridge-) and [openbridge-\*](https://www.npmjs.com/search?q=openbridge-) npm packages. Similar in concept to the VS Code Marketplace — browse, search, and rate plugins. Deployed at **marketplace.openbridge.nubisco.io**.
 
 Running openbridge instances can also fetch the plugin list from the JSON API instead of querying npm directly, getting community ratings alongside install metadata.
 
@@ -34,6 +34,7 @@ openbridge-marketplace/
 ```
 
 **Stack:**
+
 - Runtime: [Bun](https://bun.sh)
 - HTTP server: [Hono](https://hono.dev)
 - Database: PostgreSQL (via `pg`)
@@ -44,31 +45,31 @@ openbridge-marketplace/
 
 ### Public endpoints (no auth required)
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/plugins` | List plugins. Params: `q`, `sort` (`downloads`\|`rating`\|`updated`), `page`, `limit` |
-| `GET` | `/api/plugins/:name` | Plugin detail + reviews |
-| `GET` | `/api/stats` | `{ plugin_count, review_count }` |
+| Method | Path                 | Description                                                                           |
+| ------ | -------------------- | ------------------------------------------------------------------------------------- |
+| `GET`  | `/api/plugins`       | List plugins. Params: `q`, `sort` (`downloads`\|`rating`\|`updated`), `page`, `limit` |
+| `GET`  | `/api/plugins/:name` | Plugin detail + reviews                                                               |
+| `GET`  | `/api/stats`         | `{ plugin_count, review_count }`                                                      |
 
 ### Auth
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/auth/otp/send` | Send OTP to email. Body: `{ email }` |
+| Method | Path                   | Description                                              |
+| ------ | ---------------------- | -------------------------------------------------------- |
+| `POST` | `/api/auth/otp/send`   | Send OTP to email. Body: `{ email }`                     |
 | `POST` | `/api/auth/otp/verify` | Verify code, set session cookie. Body: `{ email, code }` |
-| `POST` | `/api/auth/logout` | Clear session |
+| `POST` | `/api/auth/logout`     | Clear session                                            |
 
 ### Reviews (auth required)
 
-| Method | Path | Description |
-|--------|------|-------------|
+| Method | Path                         | Description                              |
+| ------ | ---------------------------- | ---------------------------------------- |
 | `POST` | `/api/plugins/:name/reviews` | Submit review. Body: `{ rating, body? }` |
-| `POST` | `/api/reviews/:id/helpful` | Mark review as helpful |
+| `POST` | `/api/reviews/:id/helpful`   | Mark review as helpful                   |
 
 ### Admin (auth required, admin role)
 
-| Method | Path | Description |
-|--------|------|-------------|
+| Method | Path              | Description                |
+| ------ | ----------------- | -------------------------- |
 | `POST` | `/api/admin/sync` | Trigger manual crawler run |
 
 ## Local development
@@ -116,10 +117,10 @@ docker compose up -d
 
 **Required GitHub Actions secrets:**
 
-| Secret | Description |
-|--------|-------------|
-| `NAS_HOST` | NAS hostname or IP |
-| `NAS_USER` | SSH username |
+| Secret        | Description                |
+| ------------- | -------------------------- |
+| `NAS_HOST`    | NAS hostname or IP         |
+| `NAS_USER`    | SSH username               |
 | `NAS_SSH_KEY` | Private key for SSH access |
 
 ## openbridge integration

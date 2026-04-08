@@ -94,10 +94,7 @@ export async function crawl(onProgress?: (msg: string) => void) {
   let synced = 0
   for (const obj of objects) {
     const pkg = obj.package
-    const [detail, weeklyDownloads] = await Promise.all([
-      fetchPackageDetail(pkg.name),
-      fetchWeeklyDownloads(pkg.name),
-    ])
+    const [detail, weeklyDownloads] = await Promise.all([fetchPackageDetail(pkg.name), fetchWeeklyDownloads(pkg.name)])
 
     const latest = detail?.['dist-tags']?.latest ?? pkg.version
     const manifest = detail?.versions?.[latest]

@@ -25,14 +25,30 @@ app.get('/api/plugins', async (c) => {
   const offset = (page - 1) * limit
 
   const orderBy =
-    sort === 'rating' ? sql`rating_avg DESC NULLS LAST`
-    : sort === 'updated' ? sql`last_published_at DESC NULLS LAST`
-    : sql`weekly_downloads DESC`
+    sort === 'rating'
+      ? sql`rating_avg DESC NULLS LAST`
+      : sort === 'updated'
+        ? sql`last_published_at DESC NULLS LAST`
+        : sql`weekly_downloads DESC`
 
   const search = q ? sql`AND (name ILIKE ${'%' + q + '%'} OR description ILIKE ${'%' + q + '%'})` : sql``
 
   const [plugins, [{ count }]] = await Promise.all([
-    sql<{ name: string; display_name: string; description: string | null; version: string; author: string | null; weekly_downloads: number; verified: boolean; deprecated: boolean; last_published_at: string; rating_avg: number | null; rating_count: number }[]>`
+    sql<
+      {
+        name: string
+        display_name: string
+        description: string | null
+        version: string
+        author: string | null
+        weekly_downloads: number
+        verified: boolean
+        deprecated: boolean
+        last_published_at: string
+        rating_avg: number | null
+        rating_count: number
+      }[]
+    >`
       SELECT
         p.name, p.display_name, p.description, p.version, p.author,
         p.weekly_downloads, p.verified, p.deprecated, p.last_published_at,

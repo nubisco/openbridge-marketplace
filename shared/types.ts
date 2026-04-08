@@ -1,24 +1,24 @@
 // ── Plugin ─────────────────────────────────────────────────────────────────────
 
 export interface Plugin {
-  name: string               // npm package name, e.g. "homebridge-z2m"
-  display_name: string       // human-friendly name from npm keywords or parsed
+  name: string // npm package name, e.g. "homebridge-z2m"
+  display_name: string // human-friendly name from npm keywords or parsed
   description: string | null
-  version: string            // latest published version
-  author: string | null      // npm author.name
+  version: string // latest published version
+  author: string | null // npm author.name
   homepage: string | null
   repository_url: string | null
-  npm_url: string            // https://www.npmjs.com/package/{name}
+  npm_url: string // https://www.npmjs.com/package/{name}
   keywords: string[]
-  engines: Record<string, string>  // e.g. { homebridge: ">=1.0.0" }
+  engines: Record<string, string> // e.g. { homebridge: ">=1.0.0" }
   weekly_downloads: number
   total_downloads: number
-  verified: boolean          // manually verified by marketplace admins
+  verified: boolean // manually verified by marketplace admins
   deprecated: boolean
-  last_published_at: string  // ISO timestamp
-  synced_at: string          // when we last fetched from npm
+  last_published_at: string // ISO timestamp
+  synced_at: string // when we last fetched from npm
   // aggregated from reviews table
-  rating_avg: number | null  // 1–5
+  rating_avg: number | null // 1–5
   rating_count: number
 }
 
@@ -42,12 +42,12 @@ export type PluginSummary = Pick<
 export interface Review {
   id: string
   plugin_name: string
-  author_email: string     // hashed before storage
-  author_display: string   // user-provided display name
-  rating: number           // 1–5
+  author_email: string // hashed before storage
+  author_display: string // user-provided display name
+  rating: number // 1–5
   title: string | null
   body: string | null
-  openbridge_version: string | null  // self-reported version of their instance
+  openbridge_version: string | null // self-reported version of their instance
   helpful_count: number
   created_at: string
   updated_at: string

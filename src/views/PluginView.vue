@@ -12,18 +12,40 @@
       <div class="plugin-detail__meta">
         <span class="meta-item">v{{ plugin.version }}</span>
         <span class="meta-item">{{ plugin.weekly_downloads.toLocaleString() }} downloads/week</span>
-        <span v-if="plugin.rating_avg" class="meta-item">⭐ {{ plugin.rating_avg }} ({{ plugin.rating_count }} reviews)</span>
+        <span v-if="plugin.rating_avg" class="meta-item"
+          >⭐ {{ plugin.rating_avg }} ({{ plugin.rating_count }} reviews)</span
+        >
         <span v-if="plugin.author" class="meta-item">by {{ plugin.author }}</span>
         <span v-if="plugin.license" class="meta-item">{{ plugin.license }}</span>
       </div>
       <div class="plugin-detail__actions">
-        <NbButton variant="primary" size="sm" :href="`https://www.npmjs.com/package/${plugin.name}`" target="_blank" rel="noopener">
+        <NbButton
+          variant="primary"
+          size="sm"
+          :href="`https://www.npmjs.com/package/${plugin.name}`"
+          target="_blank"
+          rel="noopener"
+        >
           View on npm
         </NbButton>
-        <NbButton v-if="plugin.homepage" variant="ghost" size="sm" :href="plugin.homepage" target="_blank" rel="noopener">
+        <NbButton
+          v-if="plugin.homepage"
+          variant="ghost"
+          size="sm"
+          :href="plugin.homepage"
+          target="_blank"
+          rel="noopener"
+        >
           Homepage
         </NbButton>
-        <NbButton v-if="plugin.repo_url" variant="ghost" size="sm" :href="plugin.repo_url" target="_blank" rel="noopener">
+        <NbButton
+          v-if="plugin.repo_url"
+          variant="ghost"
+          size="sm"
+          :href="plugin.repo_url"
+          target="_blank"
+          rel="noopener"
+        >
           GitHub
         </NbButton>
       </div>
@@ -53,7 +75,9 @@
             class="star-btn"
             :class="{ active: n <= draftRating }"
             @click="draftRating = n"
-          >★</button>
+          >
+            ★
+          </button>
         </div>
         <NbTextInput
           v-model="draftBody"
@@ -101,9 +125,7 @@
             <span class="review-card__date">{{ formatDate(r.created_at) }}</span>
           </div>
           <p v-if="r.body" class="review-card__body">{{ r.body }}</p>
-          <button class="helpful-btn" @click="markHelpful(r.id)">
-            👍 Helpful ({{ r.helpful_count }})
-          </button>
+          <button class="helpful-btn" @click="markHelpful(r.id)">👍 Helpful ({{ r.helpful_count }})</button>
         </div>
       </div>
       <div v-else class="state-msg">No reviews yet. Be the first!</div>
@@ -141,7 +163,10 @@ async function load() {
   loading.value = true
   try {
     const res = await fetch(`/api/plugins/${encodeURIComponent(pluginName)}`)
-    if (!res.ok) { plugin.value = null; return }
+    if (!res.ok) {
+      plugin.value = null
+      return
+    }
     const data = await res.json()
     plugin.value = data.plugin
     reviews.value = data.reviews
@@ -211,7 +236,7 @@ async function submitReview() {
 
 async function markHelpful(id: number) {
   await fetch(`/api/reviews/${id}/helpful`, { method: 'POST' })
-  const r = reviews.value.find(rv => rv.id === id)
+  const r = reviews.value.find((rv) => rv.id === id)
   if (r) r.helpful_count++
 }
 
@@ -432,7 +457,9 @@ onMounted(load)
   cursor: pointer;
   color: var(--nb-c-text-subtle);
   align-self: flex-start;
-  transition: border-color 0.1s, color 0.1s;
+  transition:
+    border-color 0.1s,
+    color 0.1s;
 
   &:hover {
     border-color: #7c3aed;

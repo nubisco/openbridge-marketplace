@@ -5,18 +5,18 @@
       <h1 class="hero__title">Find Openbridge & Homebridge Plugins</h1>
       <p class="hero__sub">{{ stats?.plugin_count?.toLocaleString() ?? '…' }} plugins · community-rated</p>
       <div class="hero__search">
-        <NbTextInput
-          v-model="q"
-          placeholder="Search plugins…"
-          size="lg"
-          class="search-input"
-          @input="onSearch"
-        />
+        <NbTextInput v-model="q" placeholder="Search plugins…" size="lg" class="search-input" @input="onSearch" />
       </div>
       <div class="hero__sort">
-        <NbButton :variant="sort === 'downloads' ? 'primary' : 'ghost'" size="sm" @click="sort = 'downloads'">Most downloaded</NbButton>
-        <NbButton :variant="sort === 'rating' ? 'primary' : 'ghost'" size="sm" @click="sort = 'rating'">Top rated</NbButton>
-        <NbButton :variant="sort === 'updated' ? 'primary' : 'ghost'" size="sm" @click="sort = 'updated'">Recently updated</NbButton>
+        <NbButton :variant="sort === 'downloads' ? 'primary' : 'ghost'" size="sm" @click="sort = 'downloads'"
+          >Most downloaded</NbButton
+        >
+        <NbButton :variant="sort === 'rating' ? 'primary' : 'ghost'" size="sm" @click="sort = 'rating'"
+          >Top rated</NbButton
+        >
+        <NbButton :variant="sort === 'updated' ? 'primary' : 'ghost'" size="sm" @click="sort = 'updated'"
+          >Recently updated</NbButton
+        >
       </div>
     </div>
 
@@ -24,12 +24,7 @@
     <div v-if="loading" class="state-msg">Loading…</div>
     <div v-else-if="!plugins.length" class="state-msg">No plugins found.</div>
     <div v-else class="plugin-grid">
-      <RouterLink
-        v-for="p in plugins"
-        :key="p.name"
-        :to="`/plugins/${p.name}`"
-        class="plugin-card"
-      >
+      <RouterLink v-for="p in plugins" :key="p.name" :to="`/plugins/${p.name}`" class="plugin-card">
         <div class="plugin-card__head">
           <span class="plugin-card__name">{{ p.name }}</span>
           <NbBadge v-if="p.verified" variant="green" size="sm">Verified</NbBadge>
@@ -68,7 +63,9 @@ const stats = ref<{ plugin_count: number; review_count: number } | null>(null)
 let searchTimeout: ReturnType<typeof setTimeout>
 function onSearch() {
   clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => { page.value = 1 }, 300)
+  searchTimeout = setTimeout(() => {
+    page.value = 1
+  }, 300)
 }
 
 async function fetchPlugins() {
@@ -142,7 +139,9 @@ fetchStats()
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 
   &:hover {
     border-color: #7c3aed;
