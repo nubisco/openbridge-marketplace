@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.2.0...v1.3.0) (2026-04-08)
+
+
+### Features
+
+* **branding:** openbridge logo, proper header/footer, privacy & terms pages ([89cea79](https://github.com/nubisco/openbridge-marketplace/commit/89cea799967442496bc14e885186bf7069c00342))
+
 # [1.2.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.1.0...v1.2.0) (2026-04-08)
 
 
