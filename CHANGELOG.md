@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.1.0...v1.2.0) (2026-04-08)
+
+
+### Features
+
+* **crawler:** fetch GitHub stars + sponsors; expose in plugins API ([806a119](https://github.com/nubisco/openbridge-marketplace/commit/806a1196445c902c6f9a514b4583bed8707521f1))
+
 # [1.1.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.0.5...v1.1.0) (2026-04-08)
 
 
