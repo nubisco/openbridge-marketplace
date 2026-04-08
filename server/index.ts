@@ -41,7 +41,12 @@ app.get('/api/plugins', async (c) => {
         description: string | null
         version: string
         author: string | null
+        homepage: string | null
+        repository_url: string | null
+        npm_url: string
         weekly_downloads: number
+        github_stars: number | null
+        github_sponsors_url: string | null
         verified: boolean
         deprecated: boolean
         last_published_at: string
@@ -51,7 +56,9 @@ app.get('/api/plugins', async (c) => {
     >`
       SELECT
         p.name, p.display_name, p.description, p.version, p.author,
-        p.weekly_downloads, p.verified, p.deprecated, p.last_published_at,
+        p.homepage, p.repository_url, p.npm_url,
+        p.weekly_downloads, p.github_stars, p.github_sponsors_url,
+        p.verified, p.deprecated, p.last_published_at,
         ROUND(AVG(r.rating)::numeric, 1) AS rating_avg,
         COUNT(r.id)::int AS rating_count
       FROM plugins p

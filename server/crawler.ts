@@ -70,6 +70,33 @@ function parseAuthor(author: NpmPackageDetail['author']): string | null {
   return author.name ?? null
 }
 
+// ── GitHub data ────────────────────────────────────────────────────────────────
+
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN
+
+function extractGithubRepo(repoUrl: string | null): string | null {
+  if (!repoUrl) return null
+  const m = repoUrl.match(/github\.com\/([^/]+)\/([^/#?]+?)(?:\.git)?(?:[/?#].*)?$/)
+  return m ? `${m[1]}/${m[2]}` : null
+}
+
+async function fetchGithubStars(repo: string): Promise<number | null> {
+  try {
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github+json',
+      'User-Agent': 'openbridge-marketplace',
+    }
+    if (GITHUB_TOKEN) headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`
+
+    const res = await fetchWithRetry(`https://api.github.com/repos/${repo}`)
+    if (!res.ok) return null
+    const data = (await res.json()) as { stargazers_count?: number }
+    return data.stargazers_count ?? null
+  } catch {
+    return null
+  }
+}
+
 const EXCLUDE_TIME_KEYS = new Set(['created', 'modified', 'unpublished'])
 
 function parseVersionHistory(time: NpmPackageDetail['time']): { version: string; date: string }[] {
@@ -132,6 +159,12 @@ export async function crawl(onProgress?: (msg: string) => void) {
     const pkg = obj.package
     const [detail, weeklyDownloads] = await Promise.all([fetchPackageDetail(pkg.name), fetchWeeklyDownloads(pkg.name)])
 
+    // GitHub data: derive sponsors URL from repo owner; fetch stars if token available
+    const repoUrl = parseRepoUrl(detail?.repository ?? null)
+    const githubRepo = extractGithubRepo(repoUrl)
+    const githubSponsorsUrl = githubRepo ? `https://github.com/sponsors/${githubRepo.split('/')[0]}` : null
+    const githubStars = githubRepo ? await fetchGithubStars(githubRepo) : null
+
     const latest = detail?.['dist-tags']?.latest ?? pkg.version
     const manifest = detail?.versions?.[latest]
     const lastPublishedAt = detail?.time?.[latest] ?? pkg.date
@@ -143,7 +176,8 @@ export async function crawl(onProgress?: (msg: string) => void) {
       INSERT INTO plugins (
         name, display_name, description, version, author, homepage,
         repository_url, npm_url, keywords, engines, versions, readme,
-        weekly_downloads, deprecated, last_published_at, synced_at
+        weekly_downloads, github_stars, github_sponsors_url,
+        deprecated, last_published_at, synced_at
       ) VALUES (
         ${pkg.name},
         ${pkg.name.replace(/^(homebridge|openbridge)-/, '').replace(/-/g, ' ')},
@@ -151,32 +185,36 @@ export async function crawl(onProgress?: (msg: string) => void) {
         ${latest},
         ${parseAuthor(detail?.author ?? manifest?.author ?? null)},
         ${detail?.homepage ?? pkg.links.homepage ?? null},
-        ${parseRepoUrl(detail?.repository ?? manifest?.repository ?? null)},
+        ${repoUrl},
         ${pkg.links.npm},
         ${JSON.stringify(detail?.keywords ?? pkg.keywords ?? [])},
         ${JSON.stringify(manifest?.engines ?? {})},
         ${JSON.stringify(versionHistory)},
         ${readme},
         ${weeklyDownloads},
+        ${githubStars},
+        ${githubSponsorsUrl},
         ${false},
         ${lastPublishedAt ?? null},
         NOW()
       )
       ON CONFLICT (name) DO UPDATE SET
-        display_name       = EXCLUDED.display_name,
-        description        = EXCLUDED.description,
-        version            = EXCLUDED.version,
-        author             = EXCLUDED.author,
-        homepage           = EXCLUDED.homepage,
-        repository_url     = EXCLUDED.repository_url,
-        keywords           = EXCLUDED.keywords,
-        engines            = EXCLUDED.engines,
-        versions           = EXCLUDED.versions,
-        readme             = EXCLUDED.readme,
-        weekly_downloads   = EXCLUDED.weekly_downloads,
-        deprecated         = EXCLUDED.deprecated,
-        last_published_at  = EXCLUDED.last_published_at,
-        synced_at          = NOW()
+        display_name          = EXCLUDED.display_name,
+        description           = EXCLUDED.description,
+        version               = EXCLUDED.version,
+        author                = EXCLUDED.author,
+        homepage              = EXCLUDED.homepage,
+        repository_url        = EXCLUDED.repository_url,
+        keywords              = EXCLUDED.keywords,
+        engines               = EXCLUDED.engines,
+        versions              = EXCLUDED.versions,
+        readme                = EXCLUDED.readme,
+        weekly_downloads      = EXCLUDED.weekly_downloads,
+        github_stars          = EXCLUDED.github_stars,
+        github_sponsors_url   = EXCLUDED.github_sponsors_url,
+        deprecated            = EXCLUDED.deprecated,
+        last_published_at     = EXCLUDED.last_published_at,
+        synced_at             = NOW()
     `
 
     synced++

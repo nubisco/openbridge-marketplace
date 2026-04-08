@@ -31,6 +31,8 @@ const schema = /* sql */ `
 
   ALTER TABLE plugins ADD COLUMN IF NOT EXISTS versions JSONB NOT NULL DEFAULT '[]';
   ALTER TABLE plugins ADD COLUMN IF NOT EXISTS readme TEXT;
+  ALTER TABLE plugins ADD COLUMN IF NOT EXISTS github_stars INTEGER;
+  ALTER TABLE plugins ADD COLUMN IF NOT EXISTS github_sponsors_url TEXT;
 
   CREATE TABLE IF NOT EXISTS reviews (
     id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),

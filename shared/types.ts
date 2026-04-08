@@ -20,6 +20,8 @@ export interface Plugin {
   readme: string | null // raw README markdown
   weekly_downloads: number
   total_downloads: number
+  github_stars: number | null
+  github_sponsors_url: string | null
   verified: boolean // manually verified by marketplace admins
   deprecated: boolean
   last_published_at: string // ISO timestamp
@@ -36,7 +38,12 @@ export type PluginSummary = Pick<
   | 'description'
   | 'version'
   | 'author'
+  | 'homepage'
+  | 'repository_url'
+  | 'npm_url'
   | 'weekly_downloads'
+  | 'github_stars'
+  | 'github_sponsors_url'
   | 'verified'
   | 'deprecated'
   | 'last_published_at'
