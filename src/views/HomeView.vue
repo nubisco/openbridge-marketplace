@@ -32,8 +32,14 @@
         <p class="plugin-card__desc">{{ p.description ?? 'No description.' }}</p>
         <div class="plugin-card__meta">
           <span>v{{ p.version }}</span>
-          <span>{{ p.weekly_downloads.toLocaleString() }} /wk</span>
-          <span v-if="p.rating_avg">⭐ {{ p.rating_avg }} ({{ p.rating_count }})</span>
+          <span class="meta-stat">
+            <NbIcon name="cloud-arrow-down" :size="11" />
+            {{ p.weekly_downloads.toLocaleString() }}
+          </span>
+          <span v-if="p.rating_count > 0" class="meta-stat">
+            <NbIcon name="star" weight="fill" :size="11" class="meta-star" />
+            {{ p.rating_avg }} &middot; {{ p.rating_count }} {{ p.rating_count === 1 ? 'review' : 'reviews' }}
+          </span>
         </div>
       </RouterLink>
     </div>
@@ -180,6 +186,17 @@ fetchStats()
   font-size: 0.75rem;
   color: var(--nb-c-text-subtle);
   margin-top: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.meta-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.meta-star {
+  color: #f59e0b;
 }
 
 .state-msg {

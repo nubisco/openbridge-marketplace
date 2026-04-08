@@ -84,6 +84,14 @@ export async function crawl(onProgress?: (msg: string) => void) {
   }
 
   // Collect all unique package names across both prefixes
+  // Only include packages that declare themselves as homebridge/openbridge plugins via keywords.
+  // This mirrors the homebridge convention: plugins must list "homebridge-plugin" as a keyword.
+  const VALID_KEYWORDS = new Set(['homebridge-plugin', 'openbridge-plugin'])
+  const isValidPlugin = (obj: NpmSearchObject): boolean => {
+    const kws = obj.package.keywords ?? []
+    return kws.some((k) => VALID_KEYWORDS.has(k))
+  }
+
   const seen = new Set<string>()
   const objects: NpmSearchObject[] = []
 
@@ -97,7 +105,7 @@ export async function crawl(onProgress?: (msg: string) => void) {
       total = page.total
 
       for (const obj of page.objects) {
-        if (!seen.has(obj.package.name)) {
+        if (!seen.has(obj.package.name) && isValidPlugin(obj)) {
           seen.add(obj.package.name)
           objects.push(obj)
         }

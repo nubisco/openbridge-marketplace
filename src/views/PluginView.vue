@@ -56,8 +56,8 @@
     </div>
 
     <!-- Keywords -->
-    <div v-if="plugin.keywords?.length" class="plugin-detail__keywords">
-      <NbBadge v-for="kw in plugin.keywords" :key="kw" variant="gray" size="sm">{{ kw }}</NbBadge>
+    <div v-if="keywords.length" class="plugin-detail__keywords">
+      <NbBadge v-for="kw in keywords" :key="kw" variant="gray" size="sm">{{ kw }}</NbBadge>
     </div>
 
     <!-- Reviews -->
@@ -119,7 +119,7 @@
       <div v-if="reviews.length" class="review-list">
         <div v-for="r in reviews" :key="r.id" class="review-card">
           <div class="review-card__head">
-            <span class="review-card__author">{{ r.author_email }}</span>
+            <span class="review-card__author">{{ r.author_display }}</span>
             <span class="review-card__stars">{{ '★'.repeat(r.rating) }}{{ '☆'.repeat(5 - r.rating) }}</span>
             <span class="review-card__date">{{ formatDate(r.created_at) }}</span>
           </div>
@@ -133,7 +133,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import type { Plugin, Review } from '../../shared/types'
 import { trackEvent } from '@/composables/useAnalytics'
@@ -144,6 +144,20 @@ const pluginName = route.params.name as string
 const plugin = ref<Plugin | null>(null)
 const reviews = ref<Review[]>([])
 const loading = ref(true)
+
+// keywords can come back from postgres as a raw JSON string if the JSONB isn't auto-parsed
+const keywords = computed<string[]>(() => {
+  const kw = plugin.value?.keywords
+  if (!kw) return []
+  if (typeof kw === 'string') {
+    try {
+      return JSON.parse(kw) as string[]
+    } catch {
+      return []
+    }
+  }
+  return kw
+})
 
 const authed = ref(false)
 const showLogin = ref(false)
