@@ -161,7 +161,7 @@ await initDb()
 console.log(`Marketplace server running on :${PORT}`)
 
 // Run crawler on boot if DB is empty, then schedule every 6 hours
-const [[{ count }]] = await sql<{ count: number }[][]>`SELECT COUNT(*)::int AS count FROM plugins`
+const [{ count }] = await sql<{ count: number }[]>`SELECT COUNT(*)::int AS count FROM plugins`
 if (count === 0) {
   console.log('DB empty — running initial crawl…')
   crawl().catch(console.error)
