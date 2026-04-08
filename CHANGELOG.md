@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/nubisco/openbridge-marketplace/compare/v1.0.1...v1.0.2) (2026-04-08)
+
+
+### Bug Fixes
+
+* add @nubisco/ui theme CSS and run crawler on boot when DB is empty ([0815abe](https://github.com/nubisco/openbridge-marketplace/commit/0815abe05b00c6ee2d05868dfffedd709644e5cd))
+
 ## [1.0.1](https://github.com/nubisco/openbridge-marketplace/compare/v1.0.0...v1.0.1) (2026-04-08)
 
 
