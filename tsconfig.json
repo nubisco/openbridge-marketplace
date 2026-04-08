@@ -11,7 +11,8 @@
       "@/*": ["./src/*"]
     },
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "types": ["vite/client"]
   },
-  "include": ["src/**/*", "src/**/*.vue", "shared/**/*", "server/**/*"]
+  "include": ["src/**/*", "src/**/*.vue", "shared/**/*"]
 }

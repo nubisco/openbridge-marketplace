@@ -4,7 +4,7 @@ import App from './App.vue'
 import { router } from './router'
 import { trackPageView } from './composables/useAnalytics'
 
-import '@nubisco/ui/style'
+import '@nubisco/ui/dist/ui.css'
 import './styles/index.scss'
 
 const app = createApp(App)

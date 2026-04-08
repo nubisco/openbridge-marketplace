@@ -16,7 +16,6 @@
           >⭐ {{ plugin.rating_avg }} ({{ plugin.rating_count }} reviews)</span
         >
         <span v-if="plugin.author" class="meta-item">by {{ plugin.author }}</span>
-        <span v-if="plugin.license" class="meta-item">{{ plugin.license }}</span>
       </div>
       <div class="plugin-detail__actions">
         <NbButton
@@ -39,10 +38,10 @@
           Homepage
         </NbButton>
         <NbButton
-          v-if="plugin.repo_url"
+          v-if="plugin.repository_url"
           variant="ghost"
           size="sm"
-          :href="plugin.repo_url"
+          :href="plugin.repository_url"
           target="_blank"
           rel="noopener"
         >
@@ -120,7 +119,7 @@
       <div v-if="reviews.length" class="review-list">
         <div v-for="r in reviews" :key="r.id" class="review-card">
           <div class="review-card__head">
-            <span class="review-card__author">{{ r.reviewer_email }}</span>
+            <span class="review-card__author">{{ r.author_email }}</span>
             <span class="review-card__stars">{{ '★'.repeat(r.rating) }}{{ '☆'.repeat(5 - r.rating) }}</span>
             <span class="review-card__date">{{ formatDate(r.created_at) }}</span>
           </div>
@@ -217,6 +216,7 @@ async function submitReview() {
   submitting.value = true
   submitError.value = ''
   trackEvent('review_submit', { plugin: pluginName, rating: String(draftRating.value) })
+
   try {
     const res = await fetch(`/api/plugins/${encodeURIComponent(pluginName)}/reviews`, {
       method: 'POST',
@@ -234,7 +234,7 @@ async function submitReview() {
   }
 }
 
-async function markHelpful(id: number) {
+async function markHelpful(id: string) {
   await fetch(`/api/reviews/${id}/helpful`, { method: 'POST' })
   const r = reviews.value.find((rv) => rv.id === id)
   if (r) r.helpful_count++
