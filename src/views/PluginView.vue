@@ -67,13 +67,7 @@
       <aside class="overview-sidebar">
         <!-- Actions -->
         <div class="sidebar-section">
-          <NbButton
-            variant="primary"
-            size="sm"
-            :href="plugin.npm_url"
-            target="_blank"
-            rel="noopener"
-          >
+          <NbButton variant="primary" size="sm" :href="plugin.npm_url" target="_blank" rel="noopener">
             <NbIcon name="arrow-square-out" :size="13" />
             View on npm
           </NbButton>
@@ -177,7 +171,12 @@
         <NbTextInput v-model="questionDisplay" placeholder="Your name" class="question-input" />
         <NbTextInput v-model="questionBody" placeholder="Your question…" class="question-input" />
         <div class="question-form__actions">
-          <NbButton variant="primary" size="sm" :disabled="!questionBody.trim() || !questionDisplay.trim() || submittingQ" @click="submitQuestion">
+          <NbButton
+            variant="primary"
+            size="sm"
+            :disabled="!questionBody.trim() || !questionDisplay.trim() || submittingQ"
+            @click="submitQuestion"
+          >
             Post question
           </NbButton>
           <NbButton variant="ghost" size="sm" @click="showQuestionForm = false">Cancel</NbButton>
@@ -215,7 +214,9 @@
         <span class="rating-summary__avg">{{ plugin.rating_avg }}</span>
         <div class="rating-summary__right">
           <span class="star-display star-display--lg">{{ starString }}</span>
-          <span class="rating-summary__count">{{ plugin.rating_count }} {{ plugin.rating_count === 1 ? 'review' : 'reviews' }}</span>
+          <span class="rating-summary__count"
+            >{{ plugin.rating_count }} {{ plugin.rating_count === 1 ? 'review' : 'reviews' }}</span
+          >
         </div>
       </div>
 
