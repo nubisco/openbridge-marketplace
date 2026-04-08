@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.0.5...v1.1.0) (2026-04-08)
+
+
+### Features
+
+* **plugin-view:** tabbed layout — Overview, Version History, Q&A, Rating & Review ([0bcdc53](https://github.com/nubisco/openbridge-marketplace/commit/0bcdc53bb9971771aa54233f779552ba9ff34acc))
+
 ## [1.0.5](https://github.com/nubisco/openbridge-marketplace/compare/v1.0.4...v1.0.5) (2026-04-08)
 
 
