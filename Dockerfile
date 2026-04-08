@@ -5,7 +5,9 @@ WORKDIR /app
 COPY package.json bun.lockb* ./
 RUN bun install --frozen-lockfile --production=false
 
-# Build frontend
+# Build frontend (VITE_ANALYTICS_ENDPOINT is baked in at build time)
+ARG VITE_ANALYTICS_ENDPOINT=https://analytics.nubisco.io/collect
+ENV VITE_ANALYTICS_ENDPOINT=$VITE_ANALYTICS_ENDPOINT
 COPY . .
 RUN bun run build
 

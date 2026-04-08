@@ -115,6 +115,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import type { Plugin, Review } from '../../shared/types'
+import { trackEvent } from '@/composables/useAnalytics'
 
 const route = useRoute()
 const pluginName = route.params.name as string
@@ -144,6 +145,7 @@ async function load() {
     const data = await res.json()
     plugin.value = data.plugin
     reviews.value = data.reviews
+    trackEvent('plugin_view', { plugin: pluginName })
   } finally {
     loading.value = false
   }
@@ -189,6 +191,7 @@ async function verifyOtp() {
 async function submitReview() {
   submitting.value = true
   submitError.value = ''
+  trackEvent('review_submit', { plugin: pluginName, rating: String(draftRating.value) })
   try {
     const res = await fetch(`/api/plugins/${encodeURIComponent(pluginName)}/reviews`, {
       method: 'POST',

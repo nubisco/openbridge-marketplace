@@ -40,6 +40,8 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: |
+            VITE_ANALYTICS_ENDPOINT=https://analytics.nubisco.io/collect
           tags: |
             ghcr.io/nubisco/openbridge-marketplace:${{ steps.pkg.outputs.version }}
             ghcr.io/nubisco/openbridge-marketplace:latest
