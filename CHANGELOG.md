@@ -1,3 +1,11 @@
+## [1.0.1](https://github.com/nubisco/openbridge-marketplace/compare/v1.0.0...v1.0.1) (2026-04-08)
+
+
+### Bug Fixes
+
+* **ci:** ignore CHANGELOG.md and bun.lock in prettier ([7721912](https://github.com/nubisco/openbridge-marketplace/commit/7721912c761db85a3f72dcafec6d662b375cf338))
+* **docker:** remove invalid --production=false flag from bun install ([6ff7e28](https://github.com/nubisco/openbridge-marketplace/commit/6ff7e28c229b2c3ff8ecededdc5a2906a3d63e12))
+
 # 1.0.0 (2026-04-08)
 
 
