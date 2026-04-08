@@ -1,5 +1,10 @@
 // ── Plugin ─────────────────────────────────────────────────────────────────────
 
+export interface PluginVersion {
+  version: string
+  date: string // ISO timestamp
+}
+
 export interface Plugin {
   name: string // npm package name, e.g. "homebridge-z2m"
   display_name: string // human-friendly name from npm keywords or parsed
@@ -11,6 +16,8 @@ export interface Plugin {
   npm_url: string // https://www.npmjs.com/package/{name}
   keywords: string[]
   engines: Record<string, string> // e.g. { homebridge: ">=1.0.0" }
+  versions: PluginVersion[] // version history from npm
+  readme: string | null // raw README markdown
   weekly_downloads: number
   total_downloads: number
   verified: boolean // manually verified by marketplace admins
@@ -36,6 +43,16 @@ export type PluginSummary = Pick<
   | 'rating_avg'
   | 'rating_count'
 >
+
+// ── Q&A ───────────────────────────────────────────────────────────────────────
+
+export interface Question {
+  id: string
+  plugin_name: string
+  author_display: string
+  body: string
+  created_at: string
+}
 
 // ── Review ─────────────────────────────────────────────────────────────────────
 
@@ -65,6 +82,7 @@ export interface PluginListResponse {
 export interface PluginDetailResponse {
   plugin: Plugin
   reviews: Review[]
+  questions: Question[]
 }
 
 // ── npm registry types (for crawler) ──────────────────────────────────────────
@@ -92,6 +110,7 @@ export interface NpmSearchObject {
 export interface NpmPackageDetail {
   name: string
   description?: string
+  readme?: string
   'dist-tags': { latest: string }
   versions: Record<string, NpmVersionManifest>
   time: Record<string, string>

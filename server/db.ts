@@ -19,6 +19,8 @@ const schema = /* sql */ `
     npm_url             TEXT NOT NULL,
     keywords            JSONB NOT NULL DEFAULT '[]',
     engines             JSONB NOT NULL DEFAULT '{}',
+    versions            JSONB NOT NULL DEFAULT '[]',
+    readme              TEXT,
     weekly_downloads    INTEGER NOT NULL DEFAULT 0,
     total_downloads     INTEGER NOT NULL DEFAULT 0,
     verified            BOOLEAN NOT NULL DEFAULT FALSE,
@@ -26,6 +28,9 @@ const schema = /* sql */ `
     last_published_at   TIMESTAMPTZ,
     synced_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
+
+  ALTER TABLE plugins ADD COLUMN IF NOT EXISTS versions JSONB NOT NULL DEFAULT '[]';
+  ALTER TABLE plugins ADD COLUMN IF NOT EXISTS readme TEXT;
 
   CREATE TABLE IF NOT EXISTS reviews (
     id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -52,6 +57,17 @@ const schema = /* sql */ `
     code        TEXT NOT NULL,
     expires_at  TIMESTAMPTZ NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS questions (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    plugin_name     TEXT NOT NULL REFERENCES plugins(name) ON DELETE CASCADE,
+    author_email_hash TEXT NOT NULL,
+    author_display  TEXT NOT NULL,
+    body            TEXT NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_questions_plugin ON questions (plugin_name);
 `
 
 export async function initDb() {

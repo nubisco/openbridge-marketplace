@@ -70,6 +70,15 @@ function parseAuthor(author: NpmPackageDetail['author']): string | null {
   return author.name ?? null
 }
 
+const EXCLUDE_TIME_KEYS = new Set(['created', 'modified', 'unpublished'])
+
+function parseVersionHistory(time: NpmPackageDetail['time']): { version: string; date: string }[] {
+  return Object.entries(time)
+    .filter(([k]) => !EXCLUDE_TIME_KEYS.has(k))
+    .sort(([, a], [, b]) => new Date(b).getTime() - new Date(a).getTime()) // newest first
+    .slice(0, 50) // cap at 50 entries to keep JSONB size bounded
+}
+
 function parseRepoUrl(repo: NpmPackageDetail['repository']): string | null {
   if (!repo) return null
   const raw = typeof repo === 'string' ? repo : repo.url
@@ -127,10 +136,13 @@ export async function crawl(onProgress?: (msg: string) => void) {
     const manifest = detail?.versions?.[latest]
     const lastPublishedAt = detail?.time?.[latest] ?? pkg.date
 
+    const versionHistory = detail?.time ? parseVersionHistory(detail.time) : []
+    const readme = detail?.readme ? detail.readme.slice(0, 65_536) : null // cap at 64KB
+
     await sql`
       INSERT INTO plugins (
         name, display_name, description, version, author, homepage,
-        repository_url, npm_url, keywords, engines,
+        repository_url, npm_url, keywords, engines, versions, readme,
         weekly_downloads, deprecated, last_published_at, synced_at
       ) VALUES (
         ${pkg.name},
@@ -143,8 +155,10 @@ export async function crawl(onProgress?: (msg: string) => void) {
         ${pkg.links.npm},
         ${JSON.stringify(detail?.keywords ?? pkg.keywords ?? [])},
         ${JSON.stringify(manifest?.engines ?? {})},
+        ${JSON.stringify(versionHistory)},
+        ${readme},
         ${weeklyDownloads},
-        ${detail?.['dist-tags']?.latest === undefined ? false : false},
+        ${false},
         ${lastPublishedAt ?? null},
         NOW()
       )
@@ -157,6 +171,8 @@ export async function crawl(onProgress?: (msg: string) => void) {
         repository_url     = EXCLUDED.repository_url,
         keywords           = EXCLUDED.keywords,
         engines            = EXCLUDED.engines,
+        versions           = EXCLUDED.versions,
+        readme             = EXCLUDED.readme,
         weekly_downloads   = EXCLUDED.weekly_downloads,
         deprecated         = EXCLUDED.deprecated,
         last_published_at  = EXCLUDED.last_published_at,

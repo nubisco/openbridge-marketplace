@@ -4,7 +4,7 @@ import { logger } from 'hono/logger'
 import { serveStatic } from 'hono/bun'
 import { sql, initDb } from './db'
 import { crawl } from './crawler'
-import type { PluginListResponse, PluginDetailResponse } from '../shared/types'
+import type { PluginListResponse, PluginDetailResponse, Question } from '../shared/types'
 
 const app = new Hono()
 const PORT = Number(process.env.PORT ?? 3000)
@@ -74,7 +74,7 @@ app.get('/api/plugins', async (c) => {
 app.get('/api/plugins/:name{.+}', async (c) => {
   const name = c.req.param('name')
 
-  const [[plugin], reviews] = await Promise.all([
+  const [[plugin], reviews, questions] = await Promise.all([
     sql`
       SELECT p.*,
         ROUND(AVG(r.rating)::numeric, 1) AS rating_avg,
@@ -92,10 +92,17 @@ app.get('/api/plugins/:name{.+}', async (c) => {
       ORDER BY helpful_count DESC, created_at DESC
       LIMIT 50
     `,
+    sql<Question[]>`
+      SELECT id, plugin_name, author_display, body, created_at
+      FROM questions
+      WHERE plugin_name = ${name}
+      ORDER BY created_at DESC
+      LIMIT 100
+    `,
   ])
 
   if (!plugin) return c.json({ error: 'Not found' }, 404)
-  return c.json({ plugin, reviews } satisfies PluginDetailResponse)
+  return c.json({ plugin, reviews, questions } satisfies PluginDetailResponse)
 })
 
 // ── Reviews ────────────────────────────────────────────────────────────────────
@@ -116,6 +123,22 @@ app.post('/api/auth/otp/verify', async (c) => {
 app.post('/api/plugins/:name{.+}/reviews', async (c) => {
   // TODO: validate JWT, insert review (upsert on email hash + plugin_name)
   return c.json({ error: 'not_implemented' }, 501)
+})
+
+// POST /api/plugins/:name/questions  — submit a question (requires reviewer JWT)
+app.post('/api/plugins/:name{.+}/questions', async (c) => {
+  // TODO: validate JWT
+  const name = c.req.param('name')
+  const body = await c.req.json<{ body: string; display: string }>()
+  if (!body.body?.trim()) return c.json({ error: 'body required' }, 400)
+  if (!body.display?.trim()) return c.json({ error: 'display name required' }, 400)
+
+  const [q] = await sql<Question[]>`
+    INSERT INTO questions (plugin_name, author_email_hash, author_display, body)
+    VALUES (${name}, ${'anon'}, ${body.display.slice(0, 64)}, ${body.body.slice(0, 2000)})
+    RETURNING id, plugin_name, author_display, body, created_at
+  `
+  return c.json(q, 201)
 })
 
 // POST /api/reviews/:id/helpful  — mark a review as helpful
