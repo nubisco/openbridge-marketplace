@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/nubisco/openbridge-marketplace/compare/v1.0.2...v1.0.3) (2026-04-08)
+
+
+### Bug Fixes
+
+* **server:** correct row destructuring for postgres count query ([bfd511f](https://github.com/nubisco/openbridge-marketplace/commit/bfd511f88e72540331d5fcf6d65f3ef95813543c))
+
 ## [1.0.2](https://github.com/nubisco/openbridge-marketplace/compare/v1.0.1...v1.0.2) (2026-04-08)
 
 
