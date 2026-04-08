@@ -3,7 +3,7 @@ WORKDIR /app
 
 # Install deps
 COPY package.json bun.lockb* ./
-RUN bun install --frozen-lockfile --production=false
+RUN bun install --frozen-lockfile
 
 # Build frontend (VITE_ANALYTICS_ENDPOINT is baked in at build time)
 ARG VITE_ANALYTICS_ENDPOINT=https://analytics.nubisco.io/collect
