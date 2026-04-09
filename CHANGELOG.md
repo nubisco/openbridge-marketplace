@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/nubisco/openbridge-marketplace/compare/v1.4.0...v1.4.1) (2026-04-09)
+
+
+### Bug Fixes
+
+* version history invalid dates, broken search, core packages excluded from results ([e1890a0](https://github.com/nubisco/openbridge-marketplace/commit/e1890a043c05466ce3a9572dd393e959416c00f9))
+
 # [1.4.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.3.0...v1.4.0) (2026-04-09)
 
 
