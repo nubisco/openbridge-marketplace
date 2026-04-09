@@ -113,7 +113,7 @@ app.get('/api/plugins', async (c) => {
       LIMIT ${limit} OFFSET ${offset}
     `,
     sql<{ count: number }[]>`
-      SELECT COUNT(*)::int AS count FROM plugins WHERE NOT deprecated ${search}
+      SELECT COUNT(*)::int AS count FROM plugins p WHERE NOT p.deprecated ${search}
     `,
   ])
 

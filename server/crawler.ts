@@ -99,11 +99,15 @@ async function fetchGithubStars(repo: string): Promise<number | null> {
 
 const EXCLUDE_TIME_KEYS = new Set(['created', 'modified', 'unpublished'])
 
+// Core packages that declare homebridge-plugin/openbridge-plugin keywords but are not plugins.
+const EXCLUDED_PACKAGES = new Set(['homebridge', 'openbridge', 'homebridge-ui', 'homebridge-cli', 'homebridge-server'])
+
 function parseVersionHistory(time: NpmPackageDetail['time']): { version: string; date: string }[] {
   return Object.entries(time)
     .filter(([k]) => !EXCLUDE_TIME_KEYS.has(k))
     .sort(([, a], [, b]) => new Date(b).getTime() - new Date(a).getTime()) // newest first
     .slice(0, 50) // cap at 50 entries to keep JSONB size bounded
+    .map(([version, date]) => ({ version, date }))
 }
 
 function parseRepoUrl(repo: NpmPackageDetail['repository']): string | null {
@@ -124,6 +128,7 @@ export async function crawl(onProgress?: (msg: string) => void) {
   // This mirrors the homebridge convention: plugins must list "homebridge-plugin" as a keyword.
   const VALID_KEYWORDS = new Set(['homebridge-plugin', 'openbridge-plugin'])
   const isValidPlugin = (obj: NpmSearchObject): boolean => {
+    if (EXCLUDED_PACKAGES.has(obj.package.name)) return false
     const kws = obj.package.keywords ?? []
     return kws.some((k) => VALID_KEYWORDS.has(k))
   }
