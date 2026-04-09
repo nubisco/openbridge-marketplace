@@ -56,13 +56,22 @@ const schema = /* sql */ `
     UNIQUE (plugin_name, author_email_hash)
   );
 
-  -- Migrate old rating column if it exists (one-time)
+  -- Migrate old rating column if it exists (one-time, idempotent)
   ALTER TABLE reviews ADD COLUMN IF NOT EXISTS vote SMALLINT CHECK (vote IN (-1, 1));
-  UPDATE reviews SET vote = CASE WHEN rating >= 3 THEN 1 ELSE -1 END WHERE vote IS NULL AND rating IS NOT NULL;
-  ALTER TABLE reviews ALTER COLUMN vote SET NOT NULL;
-  ALTER TABLE reviews DROP COLUMN IF EXISTS rating;
-  ALTER TABLE reviews DROP COLUMN IF EXISTS title;
-  ALTER TABLE reviews DROP COLUMN IF EXISTS openbridge_version;
+  DO $$
+  BEGIN
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'reviews' AND column_name = 'rating'
+    ) THEN
+      UPDATE reviews SET vote = CASE WHEN rating >= 3 THEN 1 ELSE -1 END WHERE vote IS NULL AND rating IS NOT NULL;
+      ALTER TABLE reviews ALTER COLUMN vote SET NOT NULL;
+      ALTER TABLE reviews DROP COLUMN rating;
+      ALTER TABLE reviews DROP COLUMN IF EXISTS title;
+      ALTER TABLE reviews DROP COLUMN IF EXISTS openbridge_version;
+    END IF;
+  END;
+  $$;
 
   CREATE INDEX IF NOT EXISTS idx_reviews_plugin ON reviews (plugin_name);
 
