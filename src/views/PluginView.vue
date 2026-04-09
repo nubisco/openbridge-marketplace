@@ -332,15 +332,7 @@
             >
               Verify
             </NbButton>
-            <NbButton
-              variant="ghost"
-              size="sm"
-              @click="
-                otpSent = false
-                otpError = ''
-              "
-              >Back</NbButton
-            >
+            <NbButton variant="ghost" size="sm" @click="resetOtp">Back</NbButton>
             <NbMessage v-if="otpError" variant="error">{{ otpError }}</NbMessage>
           </div>
         </div>
@@ -542,6 +534,11 @@ async function load() {
 }
 
 // ── OTP auth ──────────────────────────────────────────────────────────────────
+
+function resetOtp() {
+  otpSent.value = false
+  otpError.value = ''
+}
 
 async function sendOtp() {
   otpLoading.value = true
