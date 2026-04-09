@@ -1,3 +1,15 @@
+# [1.4.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.3.0...v1.4.0) (2026-04-09)
+
+
+### Bug Fixes
+
+* replace multi-statement inline event handler with resetOtp method ([11b2351](https://github.com/nubisco/openbridge-marketplace/commit/11b2351e94caaaf4a4c8546de013a309feb47401))
+
+
+### Features
+
+* authenticated Q&A and thumbs-up/down reviews with rate limiting ([5acfb28](https://github.com/nubisco/openbridge-marketplace/commit/5acfb2828e07346e8afa277675fd5ca0365829a9))
+
 # [1.3.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.2.0...v1.3.0) (2026-04-08)
 
 
