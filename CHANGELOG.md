@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/nubisco/openbridge-marketplace/compare/v1.4.1...v1.4.2) (2026-04-09)
+
+
+### Bug Fixes
+
+* idempotent reviews migration crashing on restart ([afe1109](https://github.com/nubisco/openbridge-marketplace/commit/afe1109f17997f4bdb331b9320497480ea5af608))
+
 ## [1.4.1](https://github.com/nubisco/openbridge-marketplace/compare/v1.4.0...v1.4.1) (2026-04-09)
 
 
