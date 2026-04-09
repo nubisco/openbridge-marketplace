@@ -1,3 +1,10 @@
+## [1.4.3](https://github.com/nubisco/openbridge-marketplace/compare/v1.4.2...v1.4.3) (2026-04-09)
+
+
+### Bug Fixes
+
+* resolve readme links ([0851748](https://github.com/nubisco/openbridge-marketplace/commit/0851748641eef634c2d89a9ab9038cf877061026))
+
 ## [1.4.2](https://github.com/nubisco/openbridge-marketplace/compare/v1.4.1...v1.4.2) (2026-04-09)
 
 
