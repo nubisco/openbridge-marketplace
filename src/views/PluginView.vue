@@ -94,6 +94,17 @@
             <NbIcon name="github-logo" :size="13" />
             Repository
           </NbButton>
+          <NbButton
+            v-if="plugin.github_sponsors_url"
+            variant="ghost"
+            size="sm"
+            :href="plugin.github_sponsors_url"
+            target="_blank"
+            rel="noopener"
+          >
+            <NbIcon name="heart" :size="13" />
+            Sponsor
+          </NbButton>
         </div>
 
         <!-- Info -->
@@ -306,38 +317,6 @@
         <NbMessage v-if="submitError" variant="error" class="review-form__msg">{{ submitError }}</NbMessage>
       </div>
 
-      <!-- OTP sign-in modal -->
-      <div v-if="showLogin" class="otp-backdrop" @click.self="showLogin = false">
-        <div class="otp-modal">
-          <h3>Sign in</h3>
-          <p class="otp-modal__hint">Enter your email to receive a one-time sign-in code.</p>
-          <div v-if="!otpSent">
-            <NbLabel>Email address</NbLabel>
-            <NbTextInput v-model="email" placeholder="you@example.com" type="email" />
-            <NbButton variant="primary" size="sm" :disabled="!email.trim() || otpLoading" @click="sendOtp">
-              Send code
-            </NbButton>
-            <NbMessage v-if="otpError" variant="error">{{ otpError }}</NbMessage>
-          </div>
-          <div v-else>
-            <NbLabel>Code sent to {{ email }}</NbLabel>
-            <NbTextInput v-model="otpCode" placeholder="123456" maxlength="6" type="tel" autocomplete="one-time-code" />
-            <NbLabel>Display name (shown publicly)</NbLabel>
-            <NbTextInput v-model="displayName" placeholder="Your name" maxlength="64" />
-            <NbButton
-              variant="primary"
-              size="sm"
-              :disabled="!otpCode || !displayName.trim() || otpLoading"
-              @click="verifyOtp"
-            >
-              Verify
-            </NbButton>
-            <NbButton variant="ghost" size="sm" @click="resetOtp">Back</NbButton>
-            <NbMessage v-if="otpError" variant="error">{{ otpError }}</NbMessage>
-          </div>
-        </div>
-      </div>
-
       <!-- Review list -->
       <div v-if="reviews.length" class="review-list">
         <div v-for="r in reviews" :key="r.id" class="review-card">
@@ -393,6 +372,38 @@
         </div>
       </div>
       <div v-else-if="!showReviewForm" class="state-msg">No reviews yet. Be the first!</div>
+    </div>
+  </div>
+
+  <!-- OTP sign-in modal — lives outside tab panels so it works from any tab -->
+  <div v-if="showLogin" class="otp-backdrop" @click.self="showLogin = false">
+    <div class="otp-modal">
+      <h3>Sign in</h3>
+      <p class="otp-modal__hint">Enter your email to receive a one-time sign-in code.</p>
+      <div v-if="!otpSent">
+        <NbLabel>Email address</NbLabel>
+        <NbTextInput v-model="email" placeholder="you@example.com" type="email" />
+        <NbButton variant="primary" size="sm" :disabled="!email.trim() || otpLoading" @click="sendOtp">
+          Send code
+        </NbButton>
+        <NbMessage v-if="otpError" variant="error">{{ otpError }}</NbMessage>
+      </div>
+      <div v-else>
+        <NbLabel>Code sent to {{ email }}</NbLabel>
+        <NbTextInput v-model="otpCode" placeholder="123456" maxlength="6" type="tel" autocomplete="one-time-code" />
+        <NbLabel>Display name (shown publicly)</NbLabel>
+        <NbTextInput v-model="displayName" placeholder="Your name" maxlength="64" />
+        <NbButton
+          variant="primary"
+          size="sm"
+          :disabled="!otpCode || !displayName.trim() || otpLoading"
+          @click="verifyOtp"
+        >
+          Verify
+        </NbButton>
+        <NbButton variant="ghost" size="sm" @click="resetOtp">Back</NbButton>
+        <NbMessage v-if="otpError" variant="error">{{ otpError }}</NbMessage>
+      </div>
     </div>
   </div>
 </template>
@@ -483,14 +494,20 @@ const engines = computed<Record<string, string>>(() => {
 const versions = computed<{ version: string; date: string }[]>(() => {
   const v = plugin.value?.versions
   if (!v) return []
+  let arr: unknown[]
   if (typeof v === 'string') {
     try {
-      return JSON.parse(v) as { version: string; date: string }[]
+      arr = JSON.parse(v)
     } catch {
       return []
     }
+  } else {
+    arr = v as unknown[]
   }
-  return v
+  // Handle old tuple format [version, date] that was stored before the .map() fix
+  return arr.map((item) =>
+    Array.isArray(item) ? { version: item[0] as string, date: item[1] as string } : (item as { version: string; date: string }),
+  )
 })
 
 function resolveReadmeImages(html: string, repositoryUrl: string | null | undefined): string {
@@ -563,7 +580,7 @@ async function sendOtp() {
       body: JSON.stringify({ email: email.value.trim() }),
     })
     if (!res.ok) {
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       throw new Error(data.message ?? data.error ?? 'Failed to send code')
     }
     otpSent.value = true
@@ -588,7 +605,7 @@ async function verifyOtp() {
       }),
     })
     if (!res.ok) {
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       throw new Error(data.message ?? data.error ?? 'Invalid code')
     }
     const data = await res.json()

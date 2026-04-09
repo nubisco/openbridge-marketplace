@@ -226,6 +226,10 @@ export async function crawl(onProgress?: (msg: string) => void) {
     if (synced % 50 === 0) log(`  Synced ${synced}/${objects.length}`)
   }
 
+  // Remove any previously-synced packages that are now excluded
+  const excluded = [...EXCLUDED_PACKAGES]
+  await sql`DELETE FROM plugins WHERE name = ANY(${excluded})`
+
   log(`Crawl complete. Synced ${synced} plugins.`)
   return synced
 }

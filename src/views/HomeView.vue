@@ -72,12 +72,17 @@ let searchTimeout: ReturnType<typeof setTimeout>
 function onSearch() {
   clearTimeout(searchTimeout)
   searchTimeout = setTimeout(() => {
-    page.value = 1
+    if (page.value !== 1) {
+      page.value = 1 // watcher will trigger fetchPlugins
+    } else {
+      fetchPlugins() // page didn't change, trigger manually
+    }
   }, 300)
 }
 
 async function fetchPlugins() {
   loading.value = true
+  plugins.value = []
   try {
     const params = new URLSearchParams({ q: q.value, sort: sort.value, page: String(page.value), limit: String(limit) })
     const res = await fetch(`/api/plugins?${params}`)
@@ -94,7 +99,7 @@ async function fetchStats() {
   stats.value = await res.json()
 }
 
-watch([q, sort, page], fetchPlugins, { immediate: true })
+watch([sort, page], fetchPlugins, { immediate: true })
 fetchStats()
 </script>
 

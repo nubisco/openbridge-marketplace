@@ -21,6 +21,12 @@ const ADMIN_SECRET = process.env.ADMIN_SECRET
 app.use('*', logger())
 app.use('/api/*', cors())
 
+// Always return JSON for unhandled errors so the client can parse them
+app.onError((err, c) => {
+  console.error('[server error]', err)
+  return c.json({ error: 'internal_error', message: 'An unexpected error occurred.' }, 500)
+})
+
 // ── Auth middleware helper ─────────────────────────────────────────────────────
 
 async function requireAuth(c: { req: { header: (k: string) => string | undefined } }) {
@@ -215,27 +221,32 @@ app.post('/api/auth/otp/request', async (c) => {
     return c.json({ error: 'rate_limited', message: 'Too many codes sent to this address. Please wait.' }, 429)
   }
 
-  const code = generateOtp()
-  const hashedCode = hashValue(code)
-  const expiresAt = new Date(Date.now() + OTP_TTL_MS)
-
-  await sql`
-    INSERT INTO otp_codes (email_hash, hashed_code, expires_at, attempts)
-    VALUES (${emailHash}, ${hashedCode}, ${expiresAt}, 0)
-    ON CONFLICT (email_hash) DO UPDATE
-      SET hashed_code = EXCLUDED.hashed_code,
-          expires_at  = EXCLUDED.expires_at,
-          attempts    = 0
-  `
-
   try {
-    await sendOtpEmail(email, code)
-  } catch (err) {
-    console.error('[OTP] Email delivery failed:', err)
-    // Return success anyway — prevents email enumeration
-  }
+    const code = generateOtp()
+    const hashedCode = hashValue(code)
+    const expiresAt = new Date(Date.now() + OTP_TTL_MS)
 
-  return c.json({ ok: true })
+    await sql`
+      INSERT INTO otp_codes (email_hash, hashed_code, expires_at, attempts)
+      VALUES (${emailHash}, ${hashedCode}, ${expiresAt}, 0)
+      ON CONFLICT (email_hash) DO UPDATE
+        SET hashed_code = EXCLUDED.hashed_code,
+            expires_at  = EXCLUDED.expires_at,
+            attempts    = 0
+    `
+
+    try {
+      await sendOtpEmail(email, code)
+    } catch (err) {
+      console.error('[OTP] Email delivery failed:', err)
+      // Return success anyway — prevents email enumeration
+    }
+
+    return c.json({ ok: true })
+  } catch (err) {
+    console.error('[OTP request] Unexpected error:', err)
+    return c.json({ error: 'internal_error', message: 'Failed to send code. Please try again.' }, 500)
+  }
 })
 
 // ── Auth: OTP verify ──────────────────────────────────────────────────────────
