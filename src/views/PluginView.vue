@@ -493,10 +493,23 @@ const versions = computed<{ version: string; date: string }[]>(() => {
   return v
 })
 
+function resolveReadmeImages(html: string, repositoryUrl: string | null | undefined): string {
+  if (!repositoryUrl) return html
+  const m = repositoryUrl.match(/github\.com\/([^/]+\/[^/#?]+?)(?:\.git)?(?:[/?#].*)?$/)
+  if (!m) return html
+  const rawBase = `https://raw.githubusercontent.com/${m[1]}/HEAD/`
+  return html.replace(
+    /(<img\s[^>]*src=")(?!https?:\/\/|\/\/|data:)([^"]+)(")/gi,
+    (_, pre, path, post) => `${pre}${rawBase}${path}${post}`,
+  )
+}
+
 const renderedReadme = computed(() => {
   const md = plugin.value?.readme
   if (!md) return ''
-  return DOMPurify.sanitize(marked.parse(md) as string)
+  const html = marked.parse(md) as string
+  const resolved = resolveReadmeImages(html, plugin.value?.repository_url)
+  return DOMPurify.sanitize(resolved)
 })
 
 const tabs = computed(() => [
