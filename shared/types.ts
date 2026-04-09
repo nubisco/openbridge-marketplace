@@ -27,8 +27,8 @@ export interface Plugin {
   last_published_at: string // ISO timestamp
   synced_at: string // when we last fetched from npm
   // aggregated from reviews table
-  rating_avg: number | null // 1–5
-  rating_count: number
+  thumb_up: number
+  thumb_down: number
 }
 
 export type PluginSummary = Pick<
@@ -47,11 +47,20 @@ export type PluginSummary = Pick<
   | 'verified'
   | 'deprecated'
   | 'last_published_at'
-  | 'rating_avg'
-  | 'rating_count'
+  | 'thumb_up'
+  | 'thumb_down'
 >
 
 // ── Q&A ───────────────────────────────────────────────────────────────────────
+
+export interface QuestionAnswer {
+  id: string
+  question_id: string
+  author_display: string
+  body: string
+  is_accepted: boolean
+  created_at: string
+}
 
 export interface Question {
   id: string
@@ -59,22 +68,29 @@ export interface Question {
   author_display: string
   body: string
   created_at: string
+  answers: QuestionAnswer[]
 }
 
 // ── Review ─────────────────────────────────────────────────────────────────────
 
+export interface ReviewReply {
+  id: string
+  review_id: string
+  author_display: string
+  body: string
+  created_at: string
+}
+
 export interface Review {
   id: string
   plugin_name: string
-  author_email: string // hashed before storage
-  author_display: string // user-provided display name
-  rating: number // 1–5
-  title: string | null
+  author_display: string
+  vote: 1 | -1 // thumbs up (1) or thumbs down (-1)
   body: string | null
-  openbridge_version: string | null // self-reported version of their instance
   helpful_count: number
   created_at: string
   updated_at: string
+  replies: ReviewReply[]
 }
 
 // ── API response shapes ────────────────────────────────────────────────────────

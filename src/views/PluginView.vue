@@ -1,5 +1,5 @@
 <template>
-  <div v-if="loading" class="state-msg">Loading…</div>
+  <div v-if="loading" class="state-msg">Loading...</div>
   <div v-else-if="!plugin" class="state-msg">Plugin not found.</div>
   <div v-else class="plugin-detail">
     <!-- ── Header ──────────────────────────────────────────────────────────── -->
@@ -19,11 +19,13 @@
             <NbIcon name="cloud-arrow-down" :size="13" />
             {{ plugin.weekly_downloads.toLocaleString() }} downloads/week
           </span>
-          <template v-if="plugin.rating_count > 0">
+          <template v-if="plugin.thumb_up + plugin.thumb_down > 0">
             <span class="hdr-sep">|</span>
-            <span class="hdr-stat hdr-stat--stars">
-              <span class="star-display">{{ starString }}</span>
-              ({{ plugin.rating_count }})
+            <span class="hdr-stat hdr-stat--votes">
+              <NbIcon name="thumbs-up" :size="13" class="vote-up" />
+              {{ plugin.thumb_up }}
+              <NbIcon name="thumbs-down" :size="13" class="vote-down" />
+              {{ plugin.thumb_down }}
             </span>
           </template>
         </div>
@@ -154,9 +156,10 @@
     <div v-else-if="activeTab === 'qa'" class="tab-content">
       <div class="qa-header">
         <h2 class="section-title">Q &amp; A</h2>
-        <NbButton v-if="!showQuestionForm" variant="primary" size="sm" @click="showQuestionForm = true">
+        <NbButton v-if="authed && !showQuestionForm" variant="primary" size="sm" @click="showQuestionForm = true">
           Ask a question
         </NbButton>
+        <NbButton v-else-if="!authed" variant="ghost" size="sm" @click="showLogin = true"> Sign in to ask </NbButton>
       </div>
 
       <!-- GitHub redirect hint -->
@@ -168,13 +171,19 @@
 
       <!-- Ask form -->
       <div v-if="showQuestionForm" class="question-form">
-        <NbTextInput v-model="questionDisplay" placeholder="Your name" class="question-input" />
-        <NbTextInput v-model="questionBody" placeholder="Your question…" class="question-input" />
+        <NbTextInput
+          v-model="questionBody"
+          placeholder="Your question... (max 1000 characters)"
+          class="question-input"
+        />
+        <div class="question-form__meta">
+          <span class="char-count" :class="{ warn: questionBody.length > 900 }"> {{ questionBody.length }}/1000 </span>
+        </div>
         <div class="question-form__actions">
           <NbButton
             variant="primary"
             size="sm"
-            :disabled="!questionBody.trim() || !questionDisplay.trim() || submittingQ"
+            :disabled="!questionBody.trim() || questionBody.length > 1000 || submittingQ"
             @click="submitQuestion"
           >
             Post question
@@ -192,6 +201,47 @@
             <span class="question-card__date">{{ formatDate(q.created_at) }}</span>
           </div>
           <p class="question-card__body">{{ q.body }}</p>
+
+          <!-- Answers -->
+          <div v-if="q.answers.length" class="answer-list">
+            <div
+              v-for="a in q.answers"
+              :key="a.id"
+              class="answer-card"
+              :class="{ 'answer-card--accepted': a.is_accepted }"
+            >
+              <div class="answer-card__head">
+                <span class="answer-card__author">{{ a.author_display }}</span>
+                <NbBadge v-if="a.is_accepted" variant="green" size="sm">Accepted</NbBadge>
+                <span class="answer-card__date">{{ formatDate(a.created_at) }}</span>
+              </div>
+              <p class="answer-card__body">{{ a.body }}</p>
+            </div>
+          </div>
+
+          <!-- Answer form -->
+          <div v-if="answerTarget === q.id" class="answer-form">
+            <NbTextInput v-model="answerBody" placeholder="Your answer... (max 2000 characters)" class="answer-input" />
+            <div class="answer-form__meta">
+              <span class="char-count" :class="{ warn: answerBody.length > 1800 }"> {{ answerBody.length }}/2000 </span>
+            </div>
+            <div class="answer-form__actions">
+              <NbButton
+                variant="primary"
+                size="sm"
+                :disabled="!answerBody.trim() || answerBody.length > 2000 || submittingA"
+                @click="submitAnswer(q.id)"
+              >
+                Post answer
+              </NbButton>
+              <NbButton variant="ghost" size="sm" @click="answerTarget = null">Cancel</NbButton>
+            </div>
+            <NbMessage v-if="answerError" variant="error">{{ answerError }}</NbMessage>
+          </div>
+          <button v-else-if="authed" class="answer-btn" @click="openAnswer(q.id)">
+            <NbIcon name="chat" :size="12" />
+            Answer
+          </button>
         </div>
       </div>
       <div v-else-if="!showQuestionForm" class="state-msg">No questions yet. Be the first to ask!</div>
@@ -202,66 +252,95 @@
       <div class="reviews-header">
         <h2 class="section-title">User Reviews</h2>
         <div class="reviews-header__actions">
-          <NbButton variant="ghost" size="sm" @click="showLogin = true">Report Issue</NbButton>
-          <NbButton variant="primary" size="sm" @click="authed ? (showReviewForm = true) : (showLogin = true)">
-            Write a review
+          <NbButton v-if="authed" variant="primary" size="sm" @click="showReviewForm = !showReviewForm">
+            {{ showReviewForm ? 'Cancel' : 'Write a review' }}
           </NbButton>
+          <NbButton v-else variant="ghost" size="sm" @click="showLogin = true"> Sign in to review </NbButton>
         </div>
       </div>
 
-      <!-- Rating summary -->
-      <div v-if="plugin.rating_count > 0" class="rating-summary">
-        <span class="rating-summary__avg">{{ plugin.rating_avg }}</span>
-        <div class="rating-summary__right">
-          <span class="star-display star-display--lg">{{ starString }}</span>
-          <span class="rating-summary__count"
-            >{{ plugin.rating_count }} {{ plugin.rating_count === 1 ? 'review' : 'reviews' }}</span
-          >
+      <!-- Vote summary -->
+      <div v-if="plugin.thumb_up + plugin.thumb_down > 0" class="vote-summary">
+        <div class="vote-summary__item vote-summary__item--up">
+          <NbIcon name="thumbs-up" :size="22" />
+          <span class="vote-summary__count">{{ plugin.thumb_up }}</span>
+          <span class="vote-summary__label">helpful</span>
+        </div>
+        <div class="vote-summary__divider" />
+        <div class="vote-summary__item vote-summary__item--down">
+          <NbIcon name="thumbs-down" :size="22" />
+          <span class="vote-summary__count">{{ plugin.thumb_down }}</span>
+          <span class="vote-summary__label">not helpful</span>
         </div>
       </div>
 
       <!-- Review form -->
       <div v-if="showReviewForm" class="review-form">
-        <h3 class="review-form__heading">Write a review</h3>
-        <div class="review-form__stars">
-          <button
-            v-for="n in 5"
-            :key="n"
-            class="star-btn"
-            :class="{ active: n <= draftRating }"
-            @click="draftRating = n"
-          >
-            ★
+        <h3 class="review-form__heading">Your review</h3>
+        <div class="vote-picker">
+          <button class="vote-btn vote-btn--up" :class="{ active: draftVote === 1 }" @click="draftVote = 1">
+            <NbIcon name="thumbs-up" :size="20" />
+            Helpful
+          </button>
+          <button class="vote-btn vote-btn--down" :class="{ active: draftVote === -1 }" @click="draftVote = -1">
+            <NbIcon name="thumbs-down" :size="20" />
+            Not helpful
           </button>
         </div>
-        <NbTextInput v-model="draftBody" placeholder="Share your experience…" class="review-form__input" />
-        <NbButton variant="primary" size="sm" :disabled="!draftRating || submitting" @click="submitReview">
+        <NbTextInput
+          v-model="draftBody"
+          placeholder="Share your experience... (optional, max 2000 characters)"
+          class="review-form__input"
+        />
+        <div class="review-form__meta">
+          <span class="char-count" :class="{ warn: draftBody.length > 1800 }"> {{ draftBody.length }}/2000 </span>
+        </div>
+        <NbButton
+          variant="primary"
+          size="sm"
+          :disabled="!draftVote || draftBody.length > 2000 || submitting"
+          @click="submitReview"
+        >
           Submit review
         </NbButton>
         <NbMessage v-if="submitError" variant="error" class="review-form__msg">{{ submitError }}</NbMessage>
       </div>
-      <div v-else-if="!authed" class="review-login-prompt">
-        <NbButton variant="ghost" size="sm" @click="showLogin = true">Sign in to write a review</NbButton>
-      </div>
 
-      <!-- OTP modal -->
+      <!-- OTP sign-in modal -->
       <div v-if="showLogin" class="otp-backdrop" @click.self="showLogin = false">
         <div class="otp-modal">
           <h3>Sign in</h3>
+          <p class="otp-modal__hint">Enter your email to receive a one-time sign-in code.</p>
           <div v-if="!otpSent">
             <NbLabel>Email address</NbLabel>
             <NbTextInput v-model="email" placeholder="you@example.com" type="email" />
-            <NbButton variant="primary" size="sm" :disabled="!email || otpLoading" @click="sendOtp">
+            <NbButton variant="primary" size="sm" :disabled="!email.trim() || otpLoading" @click="sendOtp">
               Send code
             </NbButton>
             <NbMessage v-if="otpError" variant="error">{{ otpError }}</NbMessage>
           </div>
           <div v-else>
-            <NbLabel>Enter the 6-digit code sent to {{ email }}</NbLabel>
-            <NbTextInput v-model="otpCode" placeholder="123456" maxlength="6" />
-            <NbButton variant="primary" size="sm" :disabled="!otpCode || otpLoading" @click="verifyOtp">
+            <NbLabel>Code sent to {{ email }}</NbLabel>
+            <NbTextInput v-model="otpCode" placeholder="123456" maxlength="6" type="tel" autocomplete="one-time-code" />
+            <NbLabel>Display name (shown publicly)</NbLabel>
+            <NbTextInput v-model="displayName" placeholder="Your name" maxlength="64" />
+            <NbButton
+              variant="primary"
+              size="sm"
+              :disabled="!otpCode || !displayName.trim() || otpLoading"
+              @click="verifyOtp"
+            >
               Verify
             </NbButton>
+            <NbButton
+              variant="ghost"
+              size="sm"
+              @click="
+                otpSent = false
+                otpError = ''
+              "
+              >Back</NbButton
+            >
             <NbMessage v-if="otpError" variant="error">{{ otpError }}</NbMessage>
           </div>
         </div>
@@ -272,17 +351,53 @@
         <div v-for="r in reviews" :key="r.id" class="review-card">
           <div class="review-card__head">
             <div class="review-card__author-block">
+              <span class="review-card__vote" :class="r.vote === 1 ? 'vote-up' : 'vote-down'">
+                <NbIcon :name="r.vote === 1 ? 'thumbs-up' : 'thumbs-down'" :size="14" />
+              </span>
               <span class="review-card__author">{{ r.author_display }}</span>
-              <span class="review-card__stars">{{ '★'.repeat(r.rating) }}{{ '☆'.repeat(5 - r.rating) }}</span>
             </div>
             <span class="review-card__date">{{ formatDate(r.created_at) }}</span>
           </div>
-          <p v-if="r.title" class="review-card__title">{{ r.title }}</p>
           <p v-if="r.body" class="review-card__body">{{ r.body }}</p>
-          <button class="helpful-btn" @click="markHelpful(r.id)">
-            <NbIcon name="thumbs-up" :size="11" />
-            Helpful ({{ r.helpful_count }})
-          </button>
+          <div class="review-card__actions">
+            <button class="helpful-btn" @click="markHelpful(r.id)">
+              <NbIcon name="thumbs-up" :size="11" />
+              Helpful ({{ r.helpful_count }})
+            </button>
+            <button v-if="authed && replyTarget !== r.id" class="answer-btn" @click="openReply(r.id)">
+              <NbIcon name="chat" :size="12" />
+              Reply
+            </button>
+          </div>
+
+          <!-- Replies -->
+          <div v-if="r.replies.length" class="reply-list">
+            <div v-for="rp in r.replies" :key="rp.id" class="reply-card">
+              <span class="reply-card__author">{{ rp.author_display }}</span>
+              <span class="reply-card__date">{{ formatDate(rp.created_at) }}</span>
+              <p class="reply-card__body">{{ rp.body }}</p>
+            </div>
+          </div>
+
+          <!-- Reply form -->
+          <div v-if="replyTarget === r.id" class="answer-form">
+            <NbTextInput v-model="replyBody" placeholder="Your reply... (max 1000 characters)" />
+            <div class="answer-form__meta">
+              <span class="char-count" :class="{ warn: replyBody.length > 900 }"> {{ replyBody.length }}/1000 </span>
+            </div>
+            <div class="answer-form__actions">
+              <NbButton
+                variant="primary"
+                size="sm"
+                :disabled="!replyBody.trim() || replyBody.length > 1000 || submittingReply"
+                @click="submitReply(r.id)"
+              >
+                Post reply
+              </NbButton>
+              <NbButton variant="ghost" size="sm" @click="replyTarget = null">Cancel</NbButton>
+            </div>
+            <NbMessage v-if="replyError" variant="error">{{ replyError }}</NbMessage>
+          </div>
         </div>
       </div>
       <div v-else-if="!showReviewForm" class="state-msg">No reviews yet. Be the first!</div>
@@ -295,7 +410,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
-import type { Plugin, Review, Question } from '../../shared/types'
+import type { Plugin, Review, ReviewReply, Question, QuestionAnswer } from '../../shared/types'
 import { trackEvent } from '@/composables/useAnalytics'
 
 const route = useRoute()
@@ -307,31 +422,46 @@ const questions = ref<Question[]>([])
 const loading = ref(true)
 const activeTab = ref<'overview' | 'versions' | 'qa' | 'reviews'>('overview')
 
-const authed = ref(false)
+// Auth state — token stored in sessionStorage (cleared on tab close, not persisted)
+const token = ref<string | null>(sessionStorage.getItem('marketplace_token'))
+const authed = computed(() => !!token.value)
 const showLogin = ref(false)
-const showReviewForm = ref(false)
 const email = ref('')
+const displayName = ref('')
 const otpCode = ref('')
 const otpSent = ref(false)
 const otpLoading = ref(false)
 const otpError = ref('')
 
-const draftRating = ref(0)
+// Review state
+const showReviewForm = ref(false)
+const draftVote = ref<1 | -1 | 0>(0)
 const draftBody = ref('')
 const submitting = ref(false)
 const submitError = ref('')
 
+// Q&A state
 const showQuestionForm = ref(false)
-const questionDisplay = ref('')
 const questionBody = ref('')
 const submittingQ = ref(false)
 const questionError = ref('')
+
+// Answer state
+const answerTarget = ref<string | null>(null)
+const answerBody = ref('')
+const submittingA = ref(false)
+const answerError = ref('')
+
+// Reply state
+const replyTarget = ref<string | null>(null)
+const replyBody = ref('')
+const submittingReply = ref(false)
+const replyError = ref('')
 
 const copied = ref(false)
 
 const isOpenBridge = computed(() => plugin.value?.name.startsWith('openbridge-') ?? false)
 
-// keywords — safely parse JSONB that may come back as a string
 const keywords = computed<string[]>(() => {
   const kw = plugin.value?.keywords
   if (!kw) return []
@@ -345,7 +475,6 @@ const keywords = computed<string[]>(() => {
   return kw
 })
 
-// engines — safely parse JSONB
 const engines = computed<Record<string, string>>(() => {
   const e = plugin.value?.engines
   if (!e) return {}
@@ -359,7 +488,6 @@ const engines = computed<Record<string, string>>(() => {
   return e
 })
 
-// versions — safely parse JSONB
 const versions = computed<{ version: string; date: string }[]>(() => {
   const v = plugin.value?.versions
   if (!v) return []
@@ -373,13 +501,6 @@ const versions = computed<{ version: string; date: string }[]>(() => {
   return v
 })
 
-const starString = computed(() => {
-  const avg = plugin.value?.rating_avg ?? 0
-  const full = Math.floor(avg)
-  const half = avg - full >= 0.5 ? 1 : 0
-  return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(5 - full - half)
-})
-
 const renderedReadme = computed(() => {
   const md = plugin.value?.readme
   if (!md) return ''
@@ -390,8 +511,10 @@ const tabs = computed(() => [
   { id: 'overview' as const, label: 'Overview' },
   { id: 'versions' as const, label: 'Version History', count: versions.value.length || undefined },
   { id: 'qa' as const, label: 'Q & A', count: questions.value.length || undefined },
-  { id: 'reviews' as const, label: 'Rating & Review', count: reviews.value.length || undefined },
+  { id: 'reviews' as const, label: 'Reviews', count: reviews.value.length || undefined },
 ])
+
+// ── Actions ───────────────────────────────────────────────────────────────────
 
 async function copyInstall() {
   if (!plugin.value) return
@@ -418,6 +541,8 @@ async function load() {
   }
 }
 
+// ── OTP auth ──────────────────────────────────────────────────────────────────
+
 async function sendOtp() {
   otpLoading.value = true
   otpError.value = ''
@@ -425,9 +550,12 @@ async function sendOtp() {
     const res = await fetch('/api/auth/otp/request', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email: email.value }),
+      body: JSON.stringify({ email: email.value.trim() }),
     })
-    if (!res.ok) throw new Error((await res.json()).error ?? 'Failed to send code')
+    if (!res.ok) {
+      const data = await res.json()
+      throw new Error(data.message ?? data.error ?? 'Failed to send code')
+    }
     otpSent.value = true
   } catch (e: unknown) {
     otpError.value = e instanceof Error ? e.message : String(e)
@@ -443,11 +571,22 @@ async function verifyOtp() {
     const res = await fetch('/api/auth/otp/verify', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email: email.value, code: otpCode.value }),
+      body: JSON.stringify({
+        email: email.value.trim(),
+        code: otpCode.value.trim(),
+        display: displayName.value.trim(),
+      }),
     })
-    if (!res.ok) throw new Error((await res.json()).error ?? 'Invalid code')
-    authed.value = true
+    if (!res.ok) {
+      const data = await res.json()
+      throw new Error(data.message ?? data.error ?? 'Invalid code')
+    }
+    const data = await res.json()
+    token.value = data.token as string
+    sessionStorage.setItem('marketplace_token', data.token as string)
     showLogin.value = false
+    otpSent.value = false
+    otpCode.value = ''
   } catch (e: unknown) {
     otpError.value = e instanceof Error ? e.message : String(e)
   } finally {
@@ -455,18 +594,30 @@ async function verifyOtp() {
   }
 }
 
+function authHeaders(): HeadersInit {
+  return { 'content-type': 'application/json', Authorization: `Bearer ${token.value ?? ''}` }
+}
+
+// ── Reviews ───────────────────────────────────────────────────────────────────
+
 async function submitReview() {
   submitting.value = true
   submitError.value = ''
-  trackEvent('review_submit', { plugin: pluginName, rating: String(draftRating.value) })
+  trackEvent('review_submit', { plugin: pluginName, vote: String(draftVote.value) })
   try {
     const res = await fetch(`/api/plugins/${encodeURIComponent(pluginName)}/reviews`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ rating: draftRating.value, body: draftBody.value }),
+      headers: authHeaders(),
+      body: JSON.stringify({ vote: draftVote.value, body: draftBody.value || undefined }),
     })
+    if (res.status === 401) {
+      token.value = null
+      sessionStorage.removeItem('marketplace_token')
+      showLogin.value = true
+      throw new Error('Session expired. Please sign in again.')
+    }
     if (!res.ok) throw new Error((await res.json()).error ?? 'Failed to submit review')
-    draftRating.value = 0
+    draftVote.value = 0
     draftBody.value = ''
     showReviewForm.value = false
     await load()
@@ -477,17 +628,65 @@ async function submitReview() {
   }
 }
 
+async function markHelpful(id: string) {
+  await fetch(`/api/reviews/${id}/helpful`, { method: 'POST' })
+  const r = reviews.value.find((rv) => rv.id === id)
+  if (r) r.helpful_count++
+}
+
+function openReply(reviewId: string) {
+  replyTarget.value = reviewId
+  replyBody.value = ''
+  replyError.value = ''
+}
+
+async function submitReply(reviewId: string) {
+  submittingReply.value = true
+  replyError.value = ''
+  try {
+    const res = await fetch(`/api/reviews/${reviewId}/replies`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ body: replyBody.value }),
+    })
+    if (res.status === 401) {
+      token.value = null
+      sessionStorage.removeItem('marketplace_token')
+      showLogin.value = true
+      throw new Error('Session expired. Please sign in again.')
+    }
+    if (!res.ok) throw new Error((await res.json()).error ?? 'Failed to post reply')
+    const reply = (await res.json()) as ReviewReply
+    const review = reviews.value.find((r) => r.id === reviewId)
+    if (review) review.replies.push(reply)
+    replyTarget.value = null
+    replyBody.value = ''
+  } catch (e: unknown) {
+    replyError.value = e instanceof Error ? e.message : String(e)
+  } finally {
+    submittingReply.value = false
+  }
+}
+
+// ── Q & A ─────────────────────────────────────────────────────────────────────
+
 async function submitQuestion() {
   submittingQ.value = true
   questionError.value = ''
   try {
     const res = await fetch(`/api/plugins/${encodeURIComponent(pluginName)}/questions`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ body: questionBody.value, display: questionDisplay.value }),
+      headers: authHeaders(),
+      body: JSON.stringify({ body: questionBody.value }),
     })
+    if (res.status === 401) {
+      token.value = null
+      sessionStorage.removeItem('marketplace_token')
+      showLogin.value = true
+      throw new Error('Session expired. Please sign in again.')
+    }
     if (!res.ok) throw new Error((await res.json()).error ?? 'Failed to post question')
-    const q: Question = await res.json()
+    const q = (await res.json()) as Question
     questions.value.unshift(q)
     questionBody.value = ''
     showQuestionForm.value = false
@@ -498,10 +697,38 @@ async function submitQuestion() {
   }
 }
 
-async function markHelpful(id: string) {
-  await fetch(`/api/reviews/${id}/helpful`, { method: 'POST' })
-  const r = reviews.value.find((rv) => rv.id === id)
-  if (r) r.helpful_count++
+function openAnswer(questionId: string) {
+  answerTarget.value = questionId
+  answerBody.value = ''
+  answerError.value = ''
+}
+
+async function submitAnswer(questionId: string) {
+  submittingA.value = true
+  answerError.value = ''
+  try {
+    const res = await fetch(`/api/questions/${questionId}/answers`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ body: answerBody.value }),
+    })
+    if (res.status === 401) {
+      token.value = null
+      sessionStorage.removeItem('marketplace_token')
+      showLogin.value = true
+      throw new Error('Session expired. Please sign in again.')
+    }
+    if (!res.ok) throw new Error((await res.json()).error ?? 'Failed to post answer')
+    const answer = (await res.json()) as QuestionAnswer
+    const question = questions.value.find((q) => q.id === questionId)
+    if (question) question.answers.push(answer)
+    answerTarget.value = null
+    answerBody.value = ''
+  } catch (e: unknown) {
+    answerError.value = e instanceof Error ? e.message : String(e)
+  } finally {
+    submittingA.value = false
+  }
 }
 
 function formatDate(iso: string) {
@@ -548,59 +775,67 @@ onMounted(load)
 .plugin-header__info {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
 }
 
 .plugin-header__title-row {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
+  margin-bottom: 0.15rem;
 }
 
 .plugin-header__name {
   font-size: 1.5rem;
   font-weight: 800;
-  font-family: monospace;
   margin: 0;
+  letter-spacing: -0.02em;
 }
 
 .plugin-header__author {
-  font-size: 0.82rem;
-  color: #7c3aed;
-  margin: 0;
-  font-weight: 500;
+  font-size: 0.85rem;
+  color: var(--nb-c-text-subtle);
+  margin: 0 0 0.5rem;
 }
 
 .plugin-header__stats {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  font-size: 0.8rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.plugin-header__desc {
+  font-size: 0.9375rem;
   color: var(--nb-c-text-subtle);
+  margin: 0;
+  line-height: 1.5;
 }
 
 .hdr-stat {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 0.3rem;
+  font-size: 0.8125rem;
+  color: var(--nb-c-text-subtle);
 }
 
-.hdr-stat--stars {
-  color: #f59e0b;
+.hdr-stat--votes {
+  gap: 0.4rem;
 }
 
 .hdr-sep {
   color: var(--nb-c-component-plain-border);
+  font-size: 0.75rem;
 }
 
-.plugin-header__desc {
-  font-size: 0.9rem;
-  color: var(--nb-c-text-subtle);
-  margin: 0;
-  line-height: 1.5;
+.vote-up {
+  color: #16a34a;
+}
+
+.vote-down {
+  color: #dc2626;
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -608,23 +843,24 @@ onMounted(load)
 .plugin-tabs {
   display: flex;
   gap: 0;
-  margin-top: 0;
+  margin-top: 1.25rem;
+  overflow-x: auto;
 }
 
 .tab-btn {
-  background: none;
-  border: none;
-  padding: 0.85rem 1.1rem;
-  font-size: 0.875rem;
-  color: var(--nb-c-text-subtle);
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition:
-    color 0.15s,
-    border-color 0.15s;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 0.4rem;
+  padding: 0.6rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--nb-c-text-subtle);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.12s;
 
   &:hover {
     color: var(--nb-c-text);
@@ -639,12 +875,10 @@ onMounted(load)
 
 .tab-count {
   font-size: 0.7rem;
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--nb-c-component-plain-bg);
+  color: var(--nb-c-text-subtle);
+  border-radius: 10px;
   padding: 0.1rem 0.45rem;
-  border-radius: 20px;
-  font-weight: 600;
-  line-height: 1.4;
 }
 
 .tab-divider {
@@ -655,173 +889,158 @@ onMounted(load)
 // ── Tab content ───────────────────────────────────────────────────────────────
 
 .tab-content {
-  min-height: 200px;
-}
+  &--overview {
+    display: grid;
+    grid-template-columns: 1fr 240px;
+    gap: 2.5rem;
+    align-items: start;
 
-.tab-content--overview {
-  display: grid;
-  grid-template-columns: 1fr 240px;
-  gap: 2rem;
-  align-items: start;
-
-  @media (max-width: 720px) {
-    grid-template-columns: 1fr;
+    @media (max-width: 767px) {
+      grid-template-columns: 1fr;
+    }
   }
 }
 
-// ── Overview — install ────────────────────────────────────────────────────────
+.state-msg {
+  color: var(--nb-c-text-subtle);
+  font-size: 0.9rem;
+  padding: 2rem 0;
+}
+
+// ── Install block ─────────────────────────────────────────────────────────────
 
 .install-block {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: var(--nb-c-surface);
+  background: var(--nb-c-component-plain-bg);
   border: 1px solid var(--nb-c-component-plain-border);
   border-radius: 8px;
-  padding: 0.7rem 1rem;
+  padding: 0.75rem 1rem;
   margin-bottom: 1.5rem;
 }
 
 .install-cmd {
   flex: 1;
-  font-family: monospace;
   font-size: 0.875rem;
+  font-family: monospace;
   color: var(--nb-c-text);
+  background: none;
+  border: none;
+  outline: none;
   user-select: all;
 }
 
 .copy-btn {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 0.3rem;
   font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.3rem 0.6rem;
-  border: 1px solid var(--nb-c-component-plain-border);
-  border-radius: 6px;
-  background: none;
-  cursor: pointer;
   color: var(--nb-c-text-subtle);
-  transition: all 0.15s;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.12s;
   white-space: nowrap;
 
-  &.copied {
-    border-color: #10b981;
-    color: #10b981;
+  &:hover {
+    color: var(--nb-c-text);
+    background: rgba(0, 0, 0, 0.04);
   }
 
-  &:hover:not(.copied) {
-    border-color: #7c3aed;
-    color: #7c3aed;
+  &.copied {
+    color: #16a34a;
   }
 }
 
-// ── Overview — README ─────────────────────────────────────────────────────────
+// ── README ────────────────────────────────────────────────────────────────────
 
 .readme {
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   line-height: 1.7;
   color: var(--nb-c-text);
 
   :deep(h1),
   :deep(h2),
-  :deep(h3),
-  :deep(h4) {
-    margin-top: 1.5em;
-    margin-bottom: 0.5em;
-    line-height: 1.25;
+  :deep(h3) {
+    font-weight: 700;
+    margin: 1.5rem 0 0.5rem;
   }
 
   :deep(h1) {
-    font-size: 1.5em;
+    font-size: 1.4rem;
   }
   :deep(h2) {
-    font-size: 1.25em;
-    padding-bottom: 0.25em;
-    border-bottom: 1px solid var(--nb-c-component-plain-border);
+    font-size: 1.15rem;
   }
   :deep(h3) {
-    font-size: 1.05em;
+    font-size: 1rem;
   }
 
   :deep(p) {
-    margin: 0 0 1em;
+    margin: 0.6rem 0;
   }
 
   :deep(code) {
     font-family: monospace;
     font-size: 0.85em;
-    background: #f3f4f6;
+    background: var(--nb-c-component-plain-bg);
+    border: 1px solid var(--nb-c-component-plain-border);
+    border-radius: 4px;
     padding: 0.1em 0.35em;
-    border-radius: 3px;
   }
 
   :deep(pre) {
-    background: #f8f9fa;
+    background: var(--nb-c-component-plain-bg);
     border: 1px solid var(--nb-c-component-plain-border);
     border-radius: 8px;
     padding: 1rem;
     overflow-x: auto;
-    margin: 0 0 1em;
+    margin: 1rem 0;
 
     code {
       background: none;
+      border: none;
       padding: 0;
-      font-size: 0.82em;
     }
-  }
-
-  :deep(ul),
-  :deep(ol) {
-    margin: 0 0 1em;
-    padding-left: 1.5em;
-  }
-
-  :deep(li) {
-    margin-bottom: 0.25em;
   }
 
   :deep(a) {
     color: #7c3aed;
   }
 
-  :deep(img) {
-    max-width: 100%;
-    border-radius: 6px;
-  }
-
-  :deep(blockquote) {
-    border-left: 3px solid #7c3aed;
-    margin: 0 0 1em;
-    padding: 0.5em 1em;
-    color: var(--nb-c-text-subtle);
-    background: rgba(124, 58, 237, 0.04);
+  :deep(ul),
+  :deep(ol) {
+    padding-left: 1.4rem;
+    margin: 0.6rem 0;
   }
 
   :deep(table) {
     border-collapse: collapse;
     width: 100%;
-    margin: 0 0 1em;
-    font-size: 0.85em;
+    font-size: 0.875rem;
+    margin: 1rem 0;
+  }
 
-    th,
-    td {
-      border: 1px solid var(--nb-c-component-plain-border);
-      padding: 0.4em 0.75em;
-      text-align: left;
-    }
+  :deep(th),
+  :deep(td) {
+    border: 1px solid var(--nb-c-component-plain-border);
+    padding: 0.4rem 0.75rem;
+    text-align: left;
+  }
 
-    th {
-      background: #f3f4f6;
-      font-weight: 600;
-    }
+  :deep(th) {
+    background: var(--nb-c-component-plain-bg);
+    font-weight: 600;
   }
 }
 
 .readme-empty {
   color: var(--nb-c-text-subtle);
-  font-size: 0.875rem;
-  padding: 2rem 0;
+  font-size: 0.9rem;
+  font-style: italic;
 }
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
@@ -829,30 +1048,31 @@ onMounted(load)
 .overview-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
+  position: sticky;
+  top: 80px;
 }
 
 .sidebar-section {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
 .sidebar-heading {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   color: var(--nb-c-text-subtle);
-  margin: 0 0 0.25rem;
+  margin: 0;
 }
 
 .sidebar-dl {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 0.2rem 0.75rem;
-  font-size: 0.8rem;
-  margin: 0;
+  font-size: 0.8125rem;
 
   dt {
     color: var(--nb-c-text-subtle);
@@ -860,9 +1080,11 @@ onMounted(load)
   }
 
   dd {
-    margin: 0;
     color: var(--nb-c-text);
-    word-break: break-word;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
@@ -872,7 +1094,7 @@ onMounted(load)
   gap: 0.35rem;
 }
 
-// ── Version History ───────────────────────────────────────────────────────────
+// ── Version table ─────────────────────────────────────────────────────────────
 
 .version-table {
   width: 100%;
@@ -881,18 +1103,23 @@ onMounted(load)
 
   th {
     text-align: left;
-    font-size: 0.78rem;
-    font-weight: 600;
+    font-size: 0.72rem;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     color: var(--nb-c-text-subtle);
-    padding: 0.5rem 0.75rem;
+    padding: 0 0.75rem 0.5rem;
     border-bottom: 1px solid var(--nb-c-component-plain-border);
   }
 
   td {
-    padding: 0.65rem 0.75rem;
+    padding: 0.55rem 0.75rem;
     border-bottom: 1px solid var(--nb-c-component-plain-border);
+    color: var(--nb-c-text);
+  }
+
+  tr:last-child td {
+    border-bottom: none;
   }
 }
 
@@ -904,21 +1131,18 @@ onMounted(load)
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-family: monospace;
-  font-weight: 600;
 }
 
 .version-date {
   color: var(--nb-c-text-subtle);
 }
 
-// ── Q&A ───────────────────────────────────────────────────────────────────────
+// ── Q & A ─────────────────────────────────────────────────────────────────────
 
-.qa-header,
-.reviews-header {
+.qa-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   margin-bottom: 1rem;
 }
 
@@ -928,252 +1152,278 @@ onMounted(load)
   margin: 0;
 }
 
-.reviews-header__actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
 .qa-hint {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  border-radius: 8px;
-  padding: 0.6rem 0.9rem;
-  font-size: 0.82rem;
-  color: #0369a1;
+  font-size: 0.8125rem;
+  color: var(--nb-c-text-subtle);
+  background: var(--nb-c-component-plain-bg);
+  border: 1px solid var(--nb-c-component-plain-border);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
   margin-bottom: 1rem;
 
   a {
-    color: #0369a1;
-    font-weight: 600;
+    color: #7c3aed;
   }
 }
 
-.question-form {
+.question-form,
+.answer-form {
+  background: var(--nb-c-component-plain-bg);
+  border: 1px solid var(--nb-c-component-plain-border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  background: var(--nb-c-surface);
-  border: 1px solid var(--nb-c-component-plain-border);
-  border-radius: 10px;
-  padding: 1.1rem;
-  margin-bottom: 1.25rem;
+  gap: 0.75rem;
 }
 
-.question-input {
-  width: 100%;
+.question-form__meta,
+.answer-form__meta {
+  display: flex;
+  justify-content: flex-end;
 }
 
-.question-form__actions {
+.question-form__actions,
+.answer-form__actions {
   display: flex;
   gap: 0.5rem;
+}
+
+.char-count {
+  font-size: 0.75rem;
+  color: var(--nb-c-text-subtle);
+
+  &.warn {
+    color: #dc2626;
+  }
+}
+
+.question-input,
+.answer-input {
+  width: 100%;
 }
 
 .question-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .question-card {
-  background: var(--nb-c-surface);
   border: 1px solid var(--nb-c-component-plain-border);
-  border-radius: 10px;
-  padding: 1rem 1.1rem;
+  border-radius: 8px;
+  padding: 1rem;
 }
 
 .question-card__head {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.5rem;
 }
 
 .question-card__author {
-  font-size: 0.82rem;
+  font-size: 0.8125rem;
   font-weight: 600;
+  color: var(--nb-c-text);
 }
 
 .question-card__date {
   font-size: 0.75rem;
   color: var(--nb-c-text-subtle);
-  margin-left: auto;
 }
 
 .question-card__body {
+  font-size: 0.9rem;
+  color: var(--nb-c-text);
+  margin: 0 0 0.75rem;
+}
+
+.answer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--nb-c-component-plain-border);
+}
+
+.answer-card {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  background: var(--nb-c-component-plain-bg);
+
+  &--accepted {
+    background: rgba(22, 163, 74, 0.06);
+    border: 1px solid rgba(22, 163, 74, 0.2);
+  }
+}
+
+.answer-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.answer-card__author {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--nb-c-text);
+}
+
+.answer-card__date {
+  font-size: 0.72rem;
+  color: var(--nb-c-text-subtle);
+  margin-left: auto;
+}
+
+.answer-card__body {
   font-size: 0.875rem;
+  color: var(--nb-c-text);
   margin: 0;
-  line-height: 1.5;
+}
+
+.answer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--nb-c-text-subtle);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.2rem 0;
+  transition: color 0.12s;
+
+  &:hover {
+    color: var(--nb-c-text);
+  }
 }
 
 // ── Reviews ───────────────────────────────────────────────────────────────────
 
-.rating-summary {
+.reviews-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.reviews-header__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.vote-summary {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.25rem;
-  background: var(--nb-c-surface);
+  gap: 2rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--nb-c-component-plain-bg);
   border: 1px solid var(--nb-c-component-plain-border);
   border-radius: 10px;
-  margin-bottom: 1.25rem;
-}
-
-.rating-summary__avg {
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: var(--nb-c-text);
-  line-height: 1;
-}
-
-.rating-summary__right {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.star-display {
-  color: #f59e0b;
-  font-size: 1rem;
-  letter-spacing: 0.05em;
-
-  &--lg {
-    font-size: 1.2rem;
-  }
-}
-
-.rating-summary__count {
-  font-size: 0.78rem;
-  color: var(--nb-c-text-subtle);
-}
-
-.review-form {
-  background: var(--nb-c-surface);
-  border: 1px solid var(--nb-c-component-plain-border);
-  border-radius: 10px;
-  padding: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
   margin-bottom: 1.5rem;
 }
 
-.review-form__heading {
-  font-size: 0.9rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.review-form__stars {
+.vote-summary__item {
   display: flex;
-  gap: 0.25rem;
+  align-items: center;
+  gap: 0.5rem;
+
+  &--up {
+    color: #16a34a;
+  }
+  &--down {
+    color: #dc2626;
+  }
 }
 
-.star-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.5rem;
-  color: var(--nb-c-component-plain-border);
-  padding: 0;
-  line-height: 1;
-  transition: color 0.1s;
+.vote-summary__count {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
 
-  &.active,
+.vote-summary__label {
+  font-size: 0.8125rem;
+  color: var(--nb-c-text-subtle);
+}
+
+.vote-summary__divider {
+  width: 1px;
+  height: 2rem;
+  background: var(--nb-c-component-plain-border);
+}
+
+.vote-picker {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.vote-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 8px;
+  border: 2px solid var(--nb-c-component-plain-border);
+  background: var(--nb-c-bg);
+  cursor: pointer;
+  transition: all 0.12s;
+  color: var(--nb-c-text-subtle);
+
   &:hover {
-    color: #f59e0b;
+    border-color: var(--nb-c-text-subtle);
+    color: var(--nb-c-text);
   }
+
+  &--up.active {
+    border-color: #16a34a;
+    background: rgba(22, 163, 74, 0.08);
+    color: #16a34a;
+  }
+
+  &--down.active {
+    border-color: #dc2626;
+    background: rgba(220, 38, 38, 0.08);
+    color: #dc2626;
+  }
+}
+
+.review-form {
+  background: var(--nb-c-component-plain-bg);
+  border: 1px solid var(--nb-c-component-plain-border);
+  border-radius: 10px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.review-form__heading {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  margin: 0;
 }
 
 .review-form__input {
   width: 100%;
 }
 
+.review-form__meta {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .review-form__msg {
   margin-top: 0.25rem;
-}
-
-.review-login-prompt {
-  margin-bottom: 1.5rem;
-}
-
-.review-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.review-card {
-  background: var(--nb-c-surface);
-  border: 1px solid var(--nb-c-component-plain-border);
-  border-radius: 10px;
-  padding: 1rem 1.1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.review-card__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.review-card__author-block {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.review-card__author {
-  font-size: 0.82rem;
-  font-weight: 600;
-}
-
-.review-card__stars {
-  color: #f59e0b;
-  font-size: 0.88rem;
-}
-
-.review-card__date {
-  font-size: 0.75rem;
-  color: var(--nb-c-text-subtle);
-}
-
-.review-card__title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.review-card__body {
-  font-size: 0.85rem;
-  margin: 0;
-  line-height: 1.5;
-}
-
-.helpful-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  background: none;
-  border: 1px solid var(--nb-c-component-plain-border);
-  border-radius: 6px;
-  padding: 0.25rem 0.6rem;
-  font-size: 0.75rem;
-  cursor: pointer;
-  color: var(--nb-c-text-subtle);
-  align-self: flex-start;
-  transition: all 0.1s;
-
-  &:hover {
-    border-color: #7c3aed;
-    color: #7c3aed;
-  }
 }
 
 // ── OTP modal ─────────────────────────────────────────────────────────────────
@@ -1182,33 +1432,134 @@ onMounted(load)
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
+  z-index: 200;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 200;
 }
 
 .otp-modal {
-  background: var(--nb-c-surface);
+  background: var(--nb-c-bg);
   border: 1px solid var(--nb-c-component-plain-border);
   border-radius: 12px;
-  padding: 1.5rem;
-  width: min(400px, 90vw);
+  padding: 1.75rem;
+  width: min(380px, 90vw);
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 
   h3 {
-    margin: 0;
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-weight: 700;
+    margin: 0;
   }
 }
 
-.state-msg {
-  text-align: center;
-  padding: 3rem;
+.otp-modal__hint {
+  font-size: 0.8375rem;
   color: var(--nb-c-text-subtle);
+  margin: 0;
+}
+
+// ── Review list ───────────────────────────────────────────────────────────────
+
+.review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.review-card {
+  border: 1px solid var(--nb-c-component-plain-border);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.review-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.review-card__author-block {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.review-card__vote {
+  display: flex;
+  align-items: center;
+}
+
+.review-card__author {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--nb-c-text);
+}
+
+.review-card__date {
+  font-size: 0.75rem;
+  color: var(--nb-c-text-subtle);
+}
+
+.review-card__body {
+  font-size: 0.9rem;
+  color: var(--nb-c-text);
+  margin: 0 0 0.75rem;
+}
+
+.review-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.helpful-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--nb-c-text-subtle);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.2rem 0;
+  transition: color 0.12s;
+
+  &:hover {
+    color: var(--nb-c-text);
+  }
+}
+
+.reply-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0.75rem 0;
+  padding-left: 1rem;
+  border-left: 2px solid var(--nb-c-component-plain-border);
+}
+
+.reply-card {
   font-size: 0.875rem;
+}
+
+.reply-card__author {
+  font-weight: 600;
+  color: var(--nb-c-text);
+  margin-right: 0.4rem;
+}
+
+.reply-card__date {
+  font-size: 0.72rem;
+  color: var(--nb-c-text-subtle);
+  margin-right: 0.4rem;
+}
+
+.reply-card__body {
+  color: var(--nb-c-text);
+  margin: 0.2rem 0 0;
 }
 </style>

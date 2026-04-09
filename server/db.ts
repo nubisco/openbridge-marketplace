@@ -34,42 +34,76 @@ const schema = /* sql */ `
   ALTER TABLE plugins ADD COLUMN IF NOT EXISTS github_stars INTEGER;
   ALTER TABLE plugins ADD COLUMN IF NOT EXISTS github_sponsors_url TEXT;
 
+  -- OTP codes: hashed_code prevents plaintext storage; attempts tracks brute force
+  CREATE TABLE IF NOT EXISTS otp_codes (
+    email_hash    TEXT PRIMARY KEY,
+    hashed_code   TEXT NOT NULL,
+    expires_at    TIMESTAMPTZ NOT NULL,
+    attempts      INTEGER NOT NULL DEFAULT 0
+  );
+
+  -- Reviews: thumbs up (1) or thumbs down (-1) with an optional comment
   CREATE TABLE IF NOT EXISTS reviews (
-    id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    plugin_name           TEXT NOT NULL REFERENCES plugins(name) ON DELETE CASCADE,
-    author_email_hash     TEXT NOT NULL,
-    author_display        TEXT NOT NULL,
-    rating                INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
-    title                 TEXT,
-    body                  TEXT,
-    openbridge_version    TEXT,
-    helpful_count         INTEGER NOT NULL DEFAULT 0,
-    created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    plugin_name       TEXT NOT NULL REFERENCES plugins(name) ON DELETE CASCADE,
+    author_email_hash TEXT NOT NULL,
+    author_display    TEXT NOT NULL CHECK (char_length(author_display) <= 64),
+    vote              SMALLINT NOT NULL CHECK (vote IN (-1, 1)),
+    body              TEXT CHECK (char_length(body) <= 2000),
+    helpful_count     INTEGER NOT NULL DEFAULT 0,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (plugin_name, author_email_hash)
   );
 
-  CREATE INDEX IF NOT EXISTS idx_reviews_plugin ON reviews (plugin_name);
-  CREATE INDEX IF NOT EXISTS idx_plugins_downloads ON plugins (weekly_downloads DESC);
-  CREATE INDEX IF NOT EXISTS idx_plugins_synced ON plugins (synced_at);
+  -- Migrate old rating column if it exists (one-time)
+  ALTER TABLE reviews ADD COLUMN IF NOT EXISTS vote SMALLINT CHECK (vote IN (-1, 1));
+  UPDATE reviews SET vote = CASE WHEN rating >= 3 THEN 1 ELSE -1 END WHERE vote IS NULL AND rating IS NOT NULL;
+  ALTER TABLE reviews ALTER COLUMN vote SET NOT NULL;
+  ALTER TABLE reviews DROP COLUMN IF EXISTS rating;
+  ALTER TABLE reviews DROP COLUMN IF EXISTS title;
+  ALTER TABLE reviews DROP COLUMN IF EXISTS openbridge_version;
 
-  -- OTP codes for reviewer auth
-  CREATE TABLE IF NOT EXISTS otp_codes (
-    email       TEXT PRIMARY KEY,
-    code        TEXT NOT NULL,
-    expires_at  TIMESTAMPTZ NOT NULL
+  CREATE INDEX IF NOT EXISTS idx_reviews_plugin ON reviews (plugin_name);
+
+  -- Review replies (anyone can respond to a review)
+  CREATE TABLE IF NOT EXISTS review_replies (
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    review_id         UUID NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
+    author_email_hash TEXT NOT NULL,
+    author_display    TEXT NOT NULL CHECK (char_length(author_display) <= 64),
+    body              TEXT NOT NULL CHECK (char_length(body) <= 1000),
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
 
+  CREATE INDEX IF NOT EXISTS idx_review_replies_review ON review_replies (review_id);
+
+  -- Q&A questions
   CREATE TABLE IF NOT EXISTS questions (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    plugin_name     TEXT NOT NULL REFERENCES plugins(name) ON DELETE CASCADE,
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    plugin_name       TEXT NOT NULL REFERENCES plugins(name) ON DELETE CASCADE,
     author_email_hash TEXT NOT NULL,
-    author_display  TEXT NOT NULL,
-    body            TEXT NOT NULL,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    author_display    TEXT NOT NULL CHECK (char_length(author_display) <= 64),
+    body              TEXT NOT NULL CHECK (char_length(body) <= 1000),
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
 
   CREATE INDEX IF NOT EXISTS idx_questions_plugin ON questions (plugin_name);
+
+  -- Q&A answers (anyone can answer)
+  CREATE TABLE IF NOT EXISTS question_answers (
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    question_id       UUID NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+    author_email_hash TEXT NOT NULL,
+    author_display    TEXT NOT NULL CHECK (char_length(author_display) <= 64),
+    body              TEXT NOT NULL CHECK (char_length(body) <= 2000),
+    is_accepted       BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_question_answers_question ON question_answers (question_id);
+  CREATE INDEX IF NOT EXISTS idx_plugins_downloads ON plugins (weekly_downloads DESC);
+  CREATE INDEX IF NOT EXISTS idx_plugins_synced ON plugins (synced_at);
 `
 
 export async function initDb() {

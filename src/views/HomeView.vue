@@ -11,7 +11,7 @@
         <NbButton :variant="sort === 'downloads' ? 'primary' : 'ghost'" size="sm" @click="sort = 'downloads'"
           >Most downloaded</NbButton
         >
-        <NbButton :variant="sort === 'rating' ? 'primary' : 'ghost'" size="sm" @click="sort = 'rating'"
+        <NbButton :variant="sort === 'votes' ? 'primary' : 'ghost'" size="sm" @click="sort = 'votes'"
           >Top rated</NbButton
         >
         <NbButton :variant="sort === 'updated' ? 'primary' : 'ghost'" size="sm" @click="sort = 'updated'"
@@ -36,9 +36,11 @@
             <NbIcon name="cloud-arrow-down" :size="11" />
             {{ p.weekly_downloads.toLocaleString() }}
           </span>
-          <span v-if="p.rating_count > 0" class="meta-stat">
-            <NbIcon name="star" weight="fill" :size="11" class="meta-star" />
-            {{ p.rating_avg }} &middot; {{ p.rating_count }} {{ p.rating_count === 1 ? 'review' : 'reviews' }}
+          <span v-if="p.thumb_up + p.thumb_down > 0" class="meta-stat">
+            <NbIcon name="thumbs-up" :size="11" class="meta-up" />
+            {{ p.thumb_up }}
+            <NbIcon name="thumbs-down" :size="11" class="meta-down" />
+            {{ p.thumb_down }}
           </span>
         </div>
       </RouterLink>
@@ -58,7 +60,7 @@ import { ref, watch } from 'vue'
 import type { PluginSummary } from '../../shared/types'
 
 const q = ref('')
-const sort = ref<'downloads' | 'rating' | 'updated'>('downloads')
+const sort = ref<'downloads' | 'votes' | 'updated'>('downloads')
 const page = ref(1)
 const limit = 24
 const plugins = ref<PluginSummary[]>([])
