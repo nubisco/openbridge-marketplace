@@ -15,15 +15,15 @@
       <h2>Data we collect</h2>
       <ul>
         <li>
-          <strong>Plugin metadata</strong> — publicly available information fetched from the npm registry and GitHub
+          <strong>Plugin metadata:</strong> publicly available information fetched from the npm registry and GitHub
           (package names, descriptions, download counts, star counts). No personal data is collected from these sources.
         </li>
         <li>
-          <strong>Anonymous analytics</strong> — if analytics is enabled, we collect page views and interaction events.
+          <strong>Anonymous analytics:</strong> if analytics is enabled, we collect page views and interaction events.
           No personal identifiers (IP addresses, cookies, fingerprints) are stored.
         </li>
         <li>
-          <strong>Reviews &amp; Q&amp;A</strong> — when you submit a review or question, your email address is hashed
+          <strong>Reviews and Q&amp;A:</strong> when you submit a review or question, your email address is hashed
           before storage and is never stored in plain text. Only the display name you provide is shown publicly.
         </li>
       </ul>

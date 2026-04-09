@@ -16,7 +16,7 @@
       <p>
         The Openbridge Marketplace is a community plugin directory for Openbridge and Homebridge. It indexes publicly
         available npm packages and provides a searchable interface, community reviews, and Q&amp;A. Plugin installation
-        is performed directly from the npm registry — Nubisco does not distribute or host plugin code.
+        is performed directly from the npm registry. Nubisco does not distribute or host plugin code.
       </p>
     </section>
 
