@@ -4,7 +4,16 @@ import { logger } from 'hono/logger'
 import { serveStatic } from 'hono/bun'
 import { sql, initDb } from './db'
 import { crawl } from './crawler'
-import { generateOtp, hashValue, signToken, verifyToken, verifyPlatformToken, sendOtpEmail, rateLimit, OTP_TTL_MS } from './auth'
+import {
+  generateOtp,
+  hashValue,
+  signToken,
+  verifyToken,
+  verifyPlatformToken,
+  sendOtpEmail,
+  rateLimit,
+  OTP_TTL_MS,
+} from './auth'
 import type {
   PluginListResponse,
   PluginDetailResponse,

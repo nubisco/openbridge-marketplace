@@ -506,7 +506,9 @@ const versions = computed<{ version: string; date: string }[]>(() => {
   }
   // Handle old tuple format [version, date] that was stored before the .map() fix
   return arr.map((item) =>
-    Array.isArray(item) ? { version: item[0] as string, date: item[1] as string } : (item as { version: string; date: string }),
+    Array.isArray(item)
+      ? { version: item[0] as string, date: item[1] as string }
+      : (item as { version: string; date: string }),
   )
 })
 
