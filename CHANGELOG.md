@@ -1,3 +1,18 @@
+# [1.5.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.4.3...v1.5.0) (2026-04-10)
+
+
+### Bug Fixes
+
+* auth issues in Q&A and reviews ([1cbb3c6](https://github.com/nubisco/openbridge-marketplace/commit/1cbb3c6280b545f1ae9b12ffefd474369af0d35b))
+* format server/auth.ts ([a854b37](https://github.com/nubisco/openbridge-marketplace/commit/a854b371a64e865579c9b6aa0845d796177473c1))
+* format server/index.ts and PluginView.vue ([e54120b](https://github.com/nubisco/openbridge-marketplace/commit/e54120b699fa435f50346da43b0f0c557983aa8c))
+* search flicker, sponsor links, OTP errors, modal visibility, invalid dates, favicon ([9adf8b2](https://github.com/nubisco/openbridge-marketplace/commit/9adf8b2cf3baffb5b760977936c5a4487456ba10))
+
+
+### Features
+
+* add Nubisco Platform JWT support for reviews and Q&A ([8fc2d4d](https://github.com/nubisco/openbridge-marketplace/commit/8fc2d4d6ec1c5fdd228ec7c464bcb4c93666e165))
+
 ## [1.4.3](https://github.com/nubisco/openbridge-marketplace/compare/v1.4.2...v1.4.3) (2026-04-09)
 
 
