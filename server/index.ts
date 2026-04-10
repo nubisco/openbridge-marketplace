@@ -4,7 +4,7 @@ import { logger } from 'hono/logger'
 import { serveStatic } from 'hono/bun'
 import { sql, initDb } from './db'
 import { crawl } from './crawler'
-import { generateOtp, hashValue, signToken, verifyToken, sendOtpEmail, rateLimit, OTP_TTL_MS } from './auth'
+import { generateOtp, hashValue, signToken, verifyToken, verifyPlatformToken, sendOtpEmail, rateLimit, OTP_TTL_MS } from './auth'
 import type {
   PluginListResponse,
   PluginDetailResponse,
@@ -33,6 +33,10 @@ async function requireAuth(c: { req: { header: (k: string) => string | undefined
   const auth = c.req.header('Authorization') ?? ''
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : ''
   if (!token) return null
+  // Try platform RS256 JWT first (when PLATFORM_ISSUER is configured)
+  const platformPayload = await verifyPlatformToken(token)
+  if (platformPayload) return platformPayload
+  // Fall back to local HS256 session token
   try {
     return await verifyToken(token)
   } catch {

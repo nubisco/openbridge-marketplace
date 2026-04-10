@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { createHash, randomInt } from 'crypto'
+import { PlatformClient } from '@nubisco/platform-sdk'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -104,3 +105,35 @@ setInterval(
   },
   5 * 60 * 1000,
 )
+
+// ── Platform JWT verification ─────────────────────────────────────────────────
+
+let _platformClient: PlatformClient | null = null
+
+function getPlatformClient(): PlatformClient | null {
+  const issuer = process.env.PLATFORM_ISSUER
+  if (!issuer) return null
+  if (!_platformClient) _platformClient = new PlatformClient({ issuer })
+  return _platformClient
+}
+
+/**
+ * Verify a Nubisco Platform JWT and return an AuthPayload compatible with the
+ * existing local auth format.
+ * - sub: SHA-256 hash of the user's email (never exposed)
+ * - display: username portion of the email
+ */
+export async function verifyPlatformToken(token: string): Promise<AuthPayload | null> {
+  const client = getPlatformClient()
+  if (!client) return null
+  try {
+    const claims = await client.verify(token)
+    const email = claims.email.toLowerCase().trim()
+    return {
+      sub: hashValue(email),
+      display: email.split('@')[0],
+    }
+  } catch {
+    return null
+  }
+}
