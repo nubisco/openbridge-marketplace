@@ -110,17 +110,14 @@ setInterval(
 function _b64urlDecode(s: string): ArrayBuffer {
   const b64 = s.replace(/-/g, '+').replace(/_/g, '/')
   const pad = (4 - (b64.length % 4)) % 4
-  return Uint8Array.from(atob(b64 + '='.repeat(pad)), (c) => c.charCodeAt(0))
-    .buffer as ArrayBuffer
+  return Uint8Array.from(atob(b64 + '='.repeat(pad)), (c) => c.charCodeAt(0)).buffer as ArrayBuffer
 }
 
 let _jwksCache: { keys: Array<JsonWebKey & { kid: string }> } | null = null
 let _jwksCacheAt = 0
 const _JWKS_TTL_MS = 5 * 60 * 1000
 
-async function _fetchJwks(
-  issuer: string,
-): Promise<{ keys: Array<JsonWebKey & { kid: string }> } | null> {
+async function _fetchJwks(issuer: string): Promise<{ keys: Array<JsonWebKey & { kid: string }> } | null> {
   const now = Date.now()
   if (_jwksCache && now - _jwksCacheAt < _JWKS_TTL_MS) return _jwksCache
   try {
@@ -152,13 +149,7 @@ async function _verifyPlatformJwt(
   if (!jwk) return null
   let key: CryptoKey
   try {
-    key = await crypto.subtle.importKey(
-      'jwk',
-      jwk,
-      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-      false,
-      ['verify'],
-    )
+    key = await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify'])
   } catch {
     return null
   }
@@ -169,9 +160,12 @@ async function _verifyPlatformJwt(
     new TextEncoder().encode(`${h}.${p}`),
   )
   if (!valid) return null
-  const claims = JSON.parse(
-    new TextDecoder().decode(new Uint8Array(_b64urlDecode(p))),
-  ) as { email: string; sub: string; exp: number; iss: string }
+  const claims = JSON.parse(new TextDecoder().decode(new Uint8Array(_b64urlDecode(p)))) as {
+    email: string
+    sub: string
+    exp: number
+    iss: string
+  }
   if (claims.exp < Math.floor(Date.now() / 1000) || claims.iss !== issuer) return null
   return claims
 }
