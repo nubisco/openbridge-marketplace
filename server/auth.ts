@@ -1,6 +1,5 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { createHash, randomInt } from 'crypto'
-import { PlatformClient } from '@nubisco/platform-sdk'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -106,15 +105,75 @@ setInterval(
   5 * 60 * 1000,
 )
 
-// ── Platform JWT verification ─────────────────────────────────────────────────
+// ── Platform JWT verification (inline — no external deps) ────────────────────
 
-let _platformClient: PlatformClient | null = null
+function _b64urlDecode(s: string): ArrayBuffer {
+  const b64 = s.replace(/-/g, '+').replace(/_/g, '/')
+  const pad = (4 - (b64.length % 4)) % 4
+  return Uint8Array.from(atob(b64 + '='.repeat(pad)), (c) => c.charCodeAt(0))
+    .buffer as ArrayBuffer
+}
 
-function getPlatformClient(): PlatformClient | null {
-  const issuer = process.env.PLATFORM_ISSUER
-  if (!issuer) return null
-  if (!_platformClient) _platformClient = new PlatformClient({ issuer })
-  return _platformClient
+let _jwksCache: { keys: Array<JsonWebKey & { kid: string }> } | null = null
+let _jwksCacheAt = 0
+const _JWKS_TTL_MS = 5 * 60 * 1000
+
+async function _fetchJwks(
+  issuer: string,
+): Promise<{ keys: Array<JsonWebKey & { kid: string }> } | null> {
+  const now = Date.now()
+  if (_jwksCache && now - _jwksCacheAt < _JWKS_TTL_MS) return _jwksCache
+  try {
+    const res = await fetch(`${issuer}/.well-known/jwks.json`)
+    if (!res.ok) return null
+    _jwksCache = (await res.json()) as { keys: Array<JsonWebKey & { kid: string }> }
+    _jwksCacheAt = now
+    return _jwksCache
+  } catch {
+    return null
+  }
+}
+
+async function _verifyPlatformJwt(
+  token: string,
+  issuer: string,
+): Promise<{ email: string; sub: string; exp: number; iss: string } | null> {
+  const parts = token.split('.')
+  if (parts.length !== 3) return null
+  const [h, p, s] = parts as [string, string, string]
+  const header = JSON.parse(new TextDecoder().decode(new Uint8Array(_b64urlDecode(h)))) as {
+    alg: string
+    kid?: string
+  }
+  if (header.alg !== 'RS256' || !header.kid) return null
+  const jwks = await _fetchJwks(issuer)
+  if (!jwks) return null
+  const jwk = jwks.keys.find((k) => k.kid === header.kid)
+  if (!jwk) return null
+  let key: CryptoKey
+  try {
+    key = await crypto.subtle.importKey(
+      'jwk',
+      jwk,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false,
+      ['verify'],
+    )
+  } catch {
+    return null
+  }
+  const valid = await crypto.subtle.verify(
+    'RSASSA-PKCS1-v1_5',
+    key,
+    _b64urlDecode(s),
+    new TextEncoder().encode(`${h}.${p}`),
+  )
+  if (!valid) return null
+  const claims = JSON.parse(
+    new TextDecoder().decode(new Uint8Array(_b64urlDecode(p))),
+  ) as { email: string; sub: string; exp: number; iss: string }
+  if (claims.exp < Math.floor(Date.now() / 1000) || claims.iss !== issuer) return null
+  return claims
 }
 
 /**
@@ -124,16 +183,13 @@ function getPlatformClient(): PlatformClient | null {
  * - display: username portion of the email
  */
 export async function verifyPlatformToken(token: string): Promise<AuthPayload | null> {
-  const client = getPlatformClient()
-  if (!client) return null
-  try {
-    const claims = await client.verify(token)
-    const email = claims.email.toLowerCase().trim()
-    return {
-      sub: hashValue(email),
-      display: email.split('@')[0],
-    }
-  } catch {
-    return null
+  const issuer = process.env.PLATFORM_ISSUER
+  if (!issuer) return null
+  const claims = await _verifyPlatformJwt(token, issuer)
+  if (!claims) return null
+  const email = claims.email.toLowerCase().trim()
+  return {
+    sub: hashValue(email),
+    display: email.split('@')[0],
   }
 }
