@@ -10,11 +10,33 @@
     "build": "vite build",
     "preview": "vite preview",
     "server:start": "bun server/index.ts",
+    "test": "vitest run --passWithNoTests",
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "quality:check": "pnpm run test && pnpm run lint && pnpm run format:check && pnpm run typecheck",
+    "prepare": "simple-git-hooks"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged && pnpm run quality:check",
+    "pre-push": "pnpm run quality:check"
+  },
+  "lint-staged": {
+    "src/**/*.{ts,vue}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "server/**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "shared/**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,mts,mjs,scss}": "prettier --write"
   },
   "release": {
     "branches": [
@@ -65,13 +87,16 @@
     "eslint": "^10.1.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-vue": "^10.8.0",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.8.1",
     "sass-embedded": "^1.98.0",
     "semantic-release": "^25.0.3",
+    "simple-git-hooks": "^2.13.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.57.2",
     "vite": "^8.0.2",
     "vue-eslint-parser": "^10.4.0",
-    "vue-tsc": "^3.2.6"
+    "vue-tsc": "^3.2.6",
+    "vitest": "^4.1.1"
   }
 }
