@@ -1,3 +1,10 @@
+## [1.5.3](https://github.com/nubisco/openbridge-marketplace/compare/v1.5.2...v1.5.3) (2026-04-17)
+
+
+### Bug Fixes
+
+* **crawler:** throttle enrichment to avoid npm rate limits ([d525186](https://github.com/nubisco/openbridge-marketplace/commit/d52518641de45805e8dc771c1c5bea75968a1d83))
+
 ## [1.5.2](https://github.com/nubisco/openbridge-marketplace/compare/v1.5.1...v1.5.2) (2026-04-17)
 
 
