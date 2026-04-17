@@ -15,7 +15,7 @@ const NPM_SEARCH = 'https://registry.npmjs.org/-/v1/search'
 const NPM_REGISTRY = 'https://registry.npmjs.org'
 const NPM_DOWNLOADS = 'https://api.npmjs.org/downloads'
 const PAGE_SIZE = 250
-const PREFIXES = ['homebridge-', 'openbridge-']
+const PREFIXES = ['openbridge-', 'homebridge-']
 
 async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
