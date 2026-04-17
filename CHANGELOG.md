@@ -1,3 +1,10 @@
+## [1.5.2](https://github.com/nubisco/openbridge-marketplace/compare/v1.5.1...v1.5.2) (2026-04-17)
+
+
+### Bug Fixes
+
+* **crawler:** handle scoped packages in display name generation ([62136ed](https://github.com/nubisco/openbridge-marketplace/commit/62136ed7628ac55eb1fe02e0349f4d191a32c264))
+
 ## [1.5.1](https://github.com/nubisco/openbridge-marketplace/compare/v1.5.0...v1.5.1) (2026-04-17)
 
 
