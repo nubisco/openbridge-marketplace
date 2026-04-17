@@ -240,8 +240,8 @@ async function doCrawl(onProgress?: (msg: string) => void) {
     synced++
     if (synced % 50 === 0) {
       log(`  Synced ${synced}/${objects.length}`)
-      await sleep(1_000) // brief pause every 50 packages to avoid rate limits
     }
+    await sleep(200) // throttle to ~5 packages/s to stay under npm rate limits
   }
 
   // Remove any previously-synced packages that are now excluded
