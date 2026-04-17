@@ -21,9 +21,9 @@ async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-async function fetchWithRetry(url: string, retries = 5, baseDelayMs = 5_000): Promise<Response> {
+async function fetchWithRetry(url: string, init?: RequestInit, retries = 5, baseDelayMs = 5_000): Promise<Response> {
   for (let attempt = 0; attempt <= retries; attempt++) {
-    const res = await fetch(url)
+    const res = await fetch(url, init)
     if (res.status !== 429) return res
 
     if (attempt === retries) return res // let caller handle final 429
@@ -88,7 +88,7 @@ async function fetchGithubStars(repo: string): Promise<number | null> {
     }
     if (GITHUB_TOKEN) headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`
 
-    const res = await fetchWithRetry(`https://api.github.com/repos/${repo}`)
+    const res = await fetchWithRetry(`https://api.github.com/repos/${repo}`, { headers })
     if (!res.ok) return null
     const data = (await res.json()) as { stargazers_count?: number }
     return data.stargazers_count ?? null
@@ -117,7 +117,22 @@ function parseRepoUrl(repo: NpmPackageDetail['repository']): string | null {
   return raw.replace(/^git\+/, '').replace(/\.git$/, '') || null
 }
 
+let crawlInProgress = false
+
 export async function crawl(onProgress?: (msg: string) => void) {
+  if (crawlInProgress) {
+    console.log('Crawl already in progress — skipping')
+    return 0
+  }
+  crawlInProgress = true
+  try {
+    return await doCrawl(onProgress)
+  } finally {
+    crawlInProgress = false
+  }
+}
+
+async function doCrawl(onProgress?: (msg: string) => void) {
   const log = (msg: string) => {
     console.log(msg)
     onProgress?.(msg)
@@ -223,7 +238,10 @@ export async function crawl(onProgress?: (msg: string) => void) {
     `
 
     synced++
-    if (synced % 50 === 0) log(`  Synced ${synced}/${objects.length}`)
+    if (synced % 50 === 0) {
+      log(`  Synced ${synced}/${objects.length}`)
+      await sleep(1_000) // brief pause every 50 packages to avoid rate limits
+    }
   }
 
   // Remove any previously-synced packages that are now excluded
