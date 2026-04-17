@@ -113,6 +113,7 @@ function parseVersionHistory(time: NpmPackageDetail['time']): { version: string;
 function parseRepoUrl(repo: NpmPackageDetail['repository']): string | null {
   if (!repo) return null
   const raw = typeof repo === 'string' ? repo : repo.url
+  if (!raw) return null
   // normalize git+https://... → https://...
   return raw.replace(/^git\+/, '').replace(/\.git$/, '') || null
 }
