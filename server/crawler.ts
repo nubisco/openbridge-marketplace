@@ -200,7 +200,7 @@ async function doCrawl(onProgress?: (msg: string) => void) {
         deprecated, last_published_at, synced_at
       ) VALUES (
         ${pkg.name},
-        ${pkg.name.replace(/^(homebridge|openbridge)-/, '').replace(/-/g, ' ')},
+        ${pkg.name.replace(/^(@[\w-]+\/)?(homebridge|openbridge)-/, '').replace(/-/g, ' ')},
         ${pkg.description ?? null},
         ${latest},
         ${parseAuthor(detail?.author ?? manifest?.author ?? null)},
