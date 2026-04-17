@@ -1,3 +1,10 @@
+## [1.5.5](https://github.com/nubisco/openbridge-marketplace/compare/v1.5.4...v1.5.5) (2026-04-17)
+
+
+### Bug Fixes
+
+* **crawler:** crawl openbridge- packages before homebridge- ([4fec201](https://github.com/nubisco/openbridge-marketplace/commit/4fec20122ad6627024e32113ccf448c9b9421ae1))
+
 ## [1.5.4](https://github.com/nubisco/openbridge-marketplace/compare/v1.5.3...v1.5.4) (2026-04-17)
 
 
