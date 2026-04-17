@@ -256,6 +256,6 @@ async function doCrawl(onProgress?: (msg: string) => void) {
 if (import.meta.main) {
   const { initDb } = await import('./db')
   await initDb()
-  await crawl(console.log)
+  await crawl()
   process.exit(0)
 }
