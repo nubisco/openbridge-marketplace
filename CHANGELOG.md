@@ -1,3 +1,12 @@
+## [1.5.1](https://github.com/nubisco/openbridge-marketplace/compare/v1.5.0...v1.5.1) (2026-04-17)
+
+
+### Bug Fixes
+
+* **ci:** disable git hooks in release workflow ([7d8899e](https://github.com/nubisco/openbridge-marketplace/commit/7d8899e0936956d06cfa39ab6d21c5db579974a9))
+* **ci:** regenerate bun.lock after dependency changes ([db36a55](https://github.com/nubisco/openbridge-marketplace/commit/db36a5544b76723cae22bb2c1efa9e1e4d9ac020))
+* prevent concurrent crawls and reduce API rate limiting ([13b99f2](https://github.com/nubisco/openbridge-marketplace/commit/13b99f2fadee54cbbffcf07befe910401d13e8bb))
+
 # [1.5.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.4.3...v1.5.0) (2026-04-10)
 
 
