@@ -1,3 +1,10 @@
+## [1.5.4](https://github.com/nubisco/openbridge-marketplace/compare/v1.5.3...v1.5.4) (2026-04-17)
+
+
+### Bug Fixes
+
+* **crawler:** remove duplicate log output in standalone mode ([aef7e98](https://github.com/nubisco/openbridge-marketplace/commit/aef7e98b5209e1d303ccbbcb9bb6dcdea215b8c5))
+
 ## [1.5.3](https://github.com/nubisco/openbridge-marketplace/compare/v1.5.2...v1.5.3) (2026-04-17)
 
 
