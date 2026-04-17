@@ -1,3 +1,10 @@
+## [1.5.6](https://github.com/nubisco/openbridge-marketplace/compare/v1.5.5...v1.5.6) (2026-04-17)
+
+
+### Bug Fixes
+
+* **crawler:** handle missing repository.url in npm package metadata ([0b78ff1](https://github.com/nubisco/openbridge-marketplace/commit/0b78ff1083e7bb52b3d7ac5e20041ecf6ac5f18a))
+
 ## [1.5.5](https://github.com/nubisco/openbridge-marketplace/compare/v1.5.4...v1.5.5) (2026-04-17)
 
 
