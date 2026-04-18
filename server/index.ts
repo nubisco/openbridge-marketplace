@@ -4,16 +4,7 @@ import { logger } from 'hono/logger'
 import { serveStatic } from 'hono/bun'
 import { sql, initDb } from './db'
 import { crawl } from './crawler'
-import {
-  generateOtp,
-  hashValue,
-  signToken,
-  verifyToken,
-  verifyPlatformToken,
-  sendOtpEmail,
-  rateLimit,
-  OTP_TTL_MS,
-} from './auth'
+import { verifyPlatformToken, rateLimit } from './auth'
 import type {
   PluginListResponse,
   PluginDetailResponse,
@@ -42,28 +33,10 @@ async function requireAuth(c: { req: { header: (k: string) => string | undefined
   const auth = c.req.header('Authorization') ?? ''
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : ''
   if (!token) return null
-  // Try platform RS256 JWT first (when PLATFORM_ISSUER is configured)
-  const platformPayload = await verifyPlatformToken(token)
-  if (platformPayload) return platformPayload
-  // Fall back to local HS256 session token
-  try {
-    return await verifyToken(token)
-  } catch {
-    return null
-  }
+  return verifyPlatformToken(token)
 }
 
 // ── Validation helpers ────────────────────────────────────────────────────────
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const DIGIT6_RE = /^\d{6}$/
-
-function isValidEmail(v: unknown): v is string {
-  return typeof v === 'string' && v.length <= 254 && EMAIL_RE.test(v)
-}
-function isValidOtpCode(v: unknown): v is string {
-  return typeof v === 'string' && DIGIT6_RE.test(v)
-}
 function isValidVote(v: unknown): v is 1 | -1 {
   return v === 1 || v === -1
 }
@@ -72,6 +45,17 @@ function str(v: unknown, max: number): string | null {
   const t = v.trim()
   return t.length > 0 && t.length <= max ? t : null
 }
+
+app.get('/api/auth/platform/config', (c) => {
+  const issuer = process.env.PLATFORM_ISSUER?.trim() ?? ''
+  const appId = process.env.PLATFORM_APP_ID?.trim() || 'marketplace'
+
+  return c.json({
+    enabled: issuer.length > 0,
+    issuer: issuer || null,
+    appId,
+  })
+})
 
 // ── Plugin list ────────────────────────────────────────────────────────────────
 
@@ -211,100 +195,6 @@ app.get('/api/plugins/:name{.+}', async (c) => {
   }))
 
   return c.json({ plugin, reviews, questions: questionsWithAnswers } satisfies PluginDetailResponse)
-})
-
-// ── Auth: OTP request ─────────────────────────────────────────────────────────
-
-app.post('/api/auth/otp/request', async (c) => {
-  const ip = c.req.header('x-forwarded-for') ?? 'unknown'
-
-  // Rate limit: 5 per minute per IP, 10 per hour per IP
-  if (!rateLimit(`otp-req:ip:${ip}`, 5, 60_000) || !rateLimit(`otp-req:ip-hour:${ip}`, 10, 3_600_000)) {
-    return c.json({ error: 'rate_limited', message: 'Too many requests. Please wait before trying again.' }, 429)
-  }
-
-  const body = await c.req.json().catch(() => null)
-  if (!isValidEmail(body?.email)) return c.json({ error: 'invalid_email' }, 400)
-
-  const email = body.email as string
-  const emailHash = hashValue(email)
-
-  // Rate limit: 3 OTPs per hour per email hash
-  if (!rateLimit(`otp-req:email:${emailHash}`, 3, 3_600_000)) {
-    return c.json({ error: 'rate_limited', message: 'Too many codes sent to this address. Please wait.' }, 429)
-  }
-
-  try {
-    const code = generateOtp()
-    const hashedCode = hashValue(code)
-    const expiresAt = new Date(Date.now() + OTP_TTL_MS)
-
-    await sql`
-      INSERT INTO otp_codes (email_hash, hashed_code, expires_at, attempts)
-      VALUES (${emailHash}, ${hashedCode}, ${expiresAt}, 0)
-      ON CONFLICT (email_hash) DO UPDATE
-        SET hashed_code = EXCLUDED.hashed_code,
-            expires_at  = EXCLUDED.expires_at,
-            attempts    = 0
-    `
-
-    try {
-      await sendOtpEmail(email, code)
-    } catch (err) {
-      console.error('[OTP] Email delivery failed:', err)
-      // Return success anyway — prevents email enumeration
-    }
-
-    return c.json({ ok: true })
-  } catch (err) {
-    console.error('[OTP request] Unexpected error:', err)
-    return c.json({ error: 'internal_error', message: 'Failed to send code. Please try again.' }, 500)
-  }
-})
-
-// ── Auth: OTP verify ──────────────────────────────────────────────────────────
-
-app.post('/api/auth/otp/verify', async (c) => {
-  const ip = c.req.header('x-forwarded-for') ?? 'unknown'
-  if (!rateLimit(`otp-verify:${ip}`, 10, 60_000)) {
-    return c.json({ error: 'rate_limited' }, 429)
-  }
-
-  const body = await c.req.json().catch(() => null)
-  if (!isValidEmail(body?.email)) return c.json({ error: 'invalid_input' }, 400)
-  if (!isValidOtpCode(body?.code)) return c.json({ error: 'invalid_input' }, 400)
-  const displayRaw = str(body?.display, 64)
-  if (!displayRaw) return c.json({ error: 'display_name_required' }, 400)
-
-  const email = body.email as string
-  const code = body.code as string
-  const display = displayRaw
-  const emailHash = hashValue(email)
-  const hashedCode = hashValue(code)
-
-  const [row] = await sql<{ hashed_code: string; expires_at: string; attempts: number }[]>`
-    SELECT hashed_code, expires_at, attempts FROM otp_codes WHERE email_hash = ${emailHash}
-  `
-
-  if (!row) return c.json({ error: 'invalid_code' }, 401)
-  if (new Date(row.expires_at) < new Date()) {
-    await sql`DELETE FROM otp_codes WHERE email_hash = ${emailHash}`
-    return c.json({ error: 'code_expired' }, 401)
-  }
-  if (row.attempts >= 5) {
-    return c.json({ error: 'too_many_attempts', message: 'Too many failed attempts. Request a new code.' }, 423)
-  }
-
-  if (row.hashed_code !== hashedCode) {
-    await sql`UPDATE otp_codes SET attempts = attempts + 1 WHERE email_hash = ${emailHash}`
-    return c.json({ error: 'invalid_code' }, 401)
-  }
-
-  // Valid — clean up and issue token
-  await sql`DELETE FROM otp_codes WHERE email_hash = ${emailHash}`
-  const token = await signToken({ sub: emailHash, display: display.trim().slice(0, 64) })
-
-  return c.json({ token, display: display.trim().slice(0, 64) })
 })
 
 // ── Reviews ────────────────────────────────────────────────────────────────────

@@ -24,12 +24,10 @@ services:
       - '3050:3000'
     environment:
       DATABASE_URL: postgres://marketplace:${POSTGRES_PASSWORD}@db:5432/marketplace
-      # Required: generate with `openssl rand -hex 32`
-      JWT_SECRET: ${JWT_SECRET}
-      # Required for OTP sign-in emails. Without this, codes are logged to console only.
-      RESEND_API_KEY: ${RESEND_API_KEY}
-      # Optional: customize the From address for sign-in emails
-      FROM_EMAIL: ${FROM_EMAIL:-Openbridge Marketplace <noreply@marketplace.openbridge.nubisco.io>}
+      # Required: Nubisco Platform issuer used for marketplace SSO
+      PLATFORM_ISSUER: ${PLATFORM_ISSUER}
+      # Optional: platform app slug for marketplace access tokens
+      PLATFORM_APP_ID: ${PLATFORM_APP_ID:-marketplace}
       # Optional: override admin secret for /api/admin/sync
       ADMIN_SECRET: ${ADMIN_SECRET}
       CRAWLER_SCHEDULE: ${CRAWLER_SCHEDULE:-0 */6 * * *}

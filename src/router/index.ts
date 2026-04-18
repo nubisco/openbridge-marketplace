@@ -18,6 +18,11 @@ export const router = createRouter({
           component: () => import('@/views/PluginView.vue'),
         },
         {
+          path: 'auth/callback',
+          name: 'auth-callback',
+          component: () => import('@/views/AuthCallbackView.vue'),
+        },
+        {
           path: 'privacy',
           name: 'privacy',
           component: () => import('@/views/PrivacyView.vue'),

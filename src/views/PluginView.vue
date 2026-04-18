@@ -170,8 +170,17 @@
         <NbButton v-if="authed && !showQuestionForm" variant="primary" size="sm" @click="showQuestionForm = true">
           Ask a question
         </NbButton>
-        <NbButton v-else-if="!authed" variant="ghost" size="sm" @click="showLogin = true"> Sign in to ask </NbButton>
+        <NbButton v-else-if="!authed" variant="ghost" size="sm" @click="startPlatformLogin('question')">
+          Sign in to ask
+        </NbButton>
       </div>
+
+      <NbMessage v-if="!authed" variant="info" class="auth-inline-message">
+        Reviews and Q&amp;A use your Nubisco Platform identity. Sign in to participate.
+      </NbMessage>
+      <NbMessage v-if="platformAuthError" variant="error" class="auth-inline-message">
+        {{ platformAuthError }}
+      </NbMessage>
 
       <!-- GitHub redirect hint -->
       <div v-if="plugin.repository_url" class="qa-hint">
@@ -266,9 +275,18 @@
           <NbButton v-if="authed" variant="primary" size="sm" @click="showReviewForm = !showReviewForm">
             {{ showReviewForm ? 'Cancel' : 'Write a review' }}
           </NbButton>
-          <NbButton v-else variant="ghost" size="sm" @click="showLogin = true"> Sign in to review </NbButton>
+          <NbButton v-else variant="ghost" size="sm" @click="startPlatformLogin('review')">
+            Sign in to review
+          </NbButton>
         </div>
       </div>
+
+      <NbMessage v-if="!authed" variant="info" class="auth-inline-message">
+        Sign in with Nubisco Platform to post marketplace reviews.
+      </NbMessage>
+      <NbMessage v-if="platformAuthError" variant="error" class="auth-inline-message">
+        {{ platformAuthError }}
+      </NbMessage>
 
       <!-- Vote summary -->
       <div v-if="plugin.thumb_up + plugin.thumb_down > 0" class="vote-summary">
@@ -374,49 +392,18 @@
       <div v-else-if="!showReviewForm" class="state-msg">No reviews yet. Be the first!</div>
     </div>
   </div>
-
-  <!-- OTP sign-in modal — lives outside tab panels so it works from any tab -->
-  <div v-if="showLogin" class="otp-backdrop" @click.self="showLogin = false">
-    <div class="otp-modal">
-      <h3>Sign in</h3>
-      <p class="otp-modal__hint">Enter your email to receive a one-time sign-in code.</p>
-      <div v-if="!otpSent">
-        <NbLabel>Email address</NbLabel>
-        <NbTextInput v-model="email" placeholder="you@example.com" type="email" />
-        <NbButton variant="primary" size="sm" :disabled="!email.trim() || otpLoading" @click="sendOtp">
-          Send code
-        </NbButton>
-        <NbMessage v-if="otpError" variant="error">{{ otpError }}</NbMessage>
-      </div>
-      <div v-else>
-        <NbLabel>Code sent to {{ email }}</NbLabel>
-        <NbTextInput v-model="otpCode" placeholder="123456" maxlength="6" type="tel" autocomplete="one-time-code" />
-        <NbLabel>Display name (shown publicly)</NbLabel>
-        <NbTextInput v-model="displayName" placeholder="Your name" maxlength="64" />
-        <NbButton
-          variant="primary"
-          size="sm"
-          :disabled="!otpCode || !displayName.trim() || otpLoading"
-          @click="verifyOtp"
-        >
-          Verify
-        </NbButton>
-        <NbButton variant="ghost" size="sm" @click="resetOtp">Back</NbButton>
-        <NbMessage v-if="otpError" variant="error">{{ otpError }}</NbMessage>
-      </div>
-    </div>
-  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import type { Plugin, Review, ReviewReply, Question, QuestionAnswer } from '../../shared/types'
 import { trackEvent } from '@/composables/useAnalytics'
 
 const route = useRoute()
+const router = useRouter()
 const pluginName = route.params.name as string
 
 const plugin = ref<Plugin | null>(null)
@@ -428,13 +415,7 @@ const activeTab = ref<'overview' | 'versions' | 'qa' | 'reviews'>('overview')
 // Auth state — token stored in sessionStorage (cleared on tab close, not persisted)
 const token = ref<string | null>(sessionStorage.getItem('marketplace_token'))
 const authed = computed(() => !!token.value)
-const showLogin = ref(false)
-const email = ref('')
-const displayName = ref('')
-const otpCode = ref('')
-const otpSent = ref(false)
-const otpLoading = ref(false)
-const otpError = ref('')
+const platformAuthError = ref('')
 
 // Review state
 const showReviewForm = ref(false)
@@ -565,66 +546,62 @@ async function load() {
   }
 }
 
-// ── OTP auth ──────────────────────────────────────────────────────────────────
+async function startPlatformLogin(action?: 'review' | 'question') {
+  platformAuthError.value = ''
 
-function resetOtp() {
-  otpSent.value = false
-  otpError.value = ''
-}
-
-async function sendOtp() {
-  otpLoading.value = true
-  otpError.value = ''
   try {
-    const res = await fetch('/api/auth/otp/request', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email: email.value.trim() }),
-    })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      throw new Error(data.message ?? data.error ?? 'Failed to send code')
-    }
-    otpSent.value = true
-  } catch (e: unknown) {
-    otpError.value = e instanceof Error ? e.message : String(e)
-  } finally {
-    otpLoading.value = false
-  }
-}
+    const res = await fetch('/api/auth/platform/config')
+    const config = (await res.json()) as { enabled: boolean; issuer: string | null; appId: string }
 
-async function verifyOtp() {
-  otpLoading.value = true
-  otpError.value = ''
-  try {
-    const res = await fetch('/api/auth/otp/verify', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        email: email.value.trim(),
-        code: otpCode.value.trim(),
-        display: displayName.value.trim(),
-      }),
-    })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      throw new Error(data.message ?? data.error ?? 'Invalid code')
+    if (!config.enabled || !config.issuer) {
+      throw new Error('Marketplace sign-in is not configured yet.')
     }
-    const data = await res.json()
-    token.value = data.token as string
-    sessionStorage.setItem('marketplace_token', data.token as string)
-    showLogin.value = false
-    otpSent.value = false
-    otpCode.value = ''
-  } catch (e: unknown) {
-    otpError.value = e instanceof Error ? e.message : String(e)
-  } finally {
-    otpLoading.value = false
+
+    const callbackUrl = new URL('/auth/callback', window.location.origin)
+    const nonce = crypto.randomUUID()
+    const returnTo = action
+      ? `${route.fullPath}${route.fullPath.includes('?') ? '&' : '?'}postAuthAction=${action}`
+      : route.fullPath
+
+    sessionStorage.setItem('marketplace_platform_state', JSON.stringify({ nonce, returnTo }))
+
+    const ssoUrl = new URL('/api/auth/sso', config.issuer)
+    ssoUrl.searchParams.set('app_id', config.appId)
+    ssoUrl.searchParams.set('redirect_uri', callbackUrl.toString())
+    ssoUrl.searchParams.set('state', nonce)
+    window.location.assign(ssoUrl.toString())
+  } catch (error: unknown) {
+    platformAuthError.value = error instanceof Error ? error.message : String(error)
   }
 }
 
 function authHeaders(): HeadersInit {
   return { 'content-type': 'application/json', Authorization: `Bearer ${token.value ?? ''}` }
+}
+
+async function handleUnauthorized(message: string, action?: 'review' | 'question') {
+  token.value = null
+  sessionStorage.removeItem('marketplace_token')
+  await startPlatformLogin(action)
+  throw new Error(message)
+}
+
+async function applyPostAuthAction() {
+  if (!authed.value) return
+
+  const action = typeof route.query.postAuthAction === 'string' ? route.query.postAuthAction : ''
+  if (action === 'review') {
+    showReviewForm.value = true
+  }
+  if (action === 'question') {
+    showQuestionForm.value = true
+  }
+
+  if (action) {
+    const nextQuery = { ...route.query }
+    delete nextQuery.postAuthAction
+    await router.replace({ path: route.path, query: nextQuery })
+  }
 }
 
 // ── Reviews ───────────────────────────────────────────────────────────────────
@@ -640,10 +617,7 @@ async function submitReview() {
       body: JSON.stringify({ vote: draftVote.value, body: draftBody.value || undefined }),
     })
     if (res.status === 401) {
-      token.value = null
-      sessionStorage.removeItem('marketplace_token')
-      showLogin.value = true
-      throw new Error('Session expired. Please sign in again.')
+      await handleUnauthorized('Session expired. Please sign in again.', 'review')
     }
     if (!res.ok) throw new Error((await res.json()).error ?? 'Failed to submit review')
     draftVote.value = 0
@@ -679,10 +653,7 @@ async function submitReply(reviewId: string) {
       body: JSON.stringify({ body: replyBody.value }),
     })
     if (res.status === 401) {
-      token.value = null
-      sessionStorage.removeItem('marketplace_token')
-      showLogin.value = true
-      throw new Error('Session expired. Please sign in again.')
+      await handleUnauthorized('Session expired. Please sign in again.')
     }
     if (!res.ok) throw new Error((await res.json()).error ?? 'Failed to post reply')
     const reply = (await res.json()) as ReviewReply
@@ -709,10 +680,7 @@ async function submitQuestion() {
       body: JSON.stringify({ body: questionBody.value }),
     })
     if (res.status === 401) {
-      token.value = null
-      sessionStorage.removeItem('marketplace_token')
-      showLogin.value = true
-      throw new Error('Session expired. Please sign in again.')
+      await handleUnauthorized('Session expired. Please sign in again.', 'question')
     }
     if (!res.ok) throw new Error((await res.json()).error ?? 'Failed to post question')
     const q = (await res.json()) as Question
@@ -742,10 +710,7 @@ async function submitAnswer(questionId: string) {
       body: JSON.stringify({ body: answerBody.value }),
     })
     if (res.status === 401) {
-      token.value = null
-      sessionStorage.removeItem('marketplace_token')
-      showLogin.value = true
-      throw new Error('Session expired. Please sign in again.')
+      await handleUnauthorized('Session expired. Please sign in again.')
     }
     if (!res.ok) throw new Error((await res.json()).error ?? 'Failed to post answer')
     const answer = (await res.json()) as QuestionAnswer
@@ -764,7 +729,10 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-onMounted(load)
+onMounted(async () => {
+  await load()
+  await applyPostAuthAction()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -934,6 +902,10 @@ onMounted(load)
   color: var(--nb-c-text-subtle);
   font-size: 0.9rem;
   padding: 2rem 0;
+}
+
+.auth-inline-message {
+  margin-bottom: 1rem;
 }
 
 // ── Install block ─────────────────────────────────────────────────────────────

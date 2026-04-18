@@ -8,8 +8,8 @@ Running openbridge instances can also fetch the plugin list from the JSON API in
 
 - **Plugin directory** — browse all homebridge-\* and openbridge-\* packages from npm, with download stats, version info, and descriptions
 - **Search and sort** — full-text search, sort by most downloaded / top rated / recently updated
-- **Ratings and reviews** — authenticated users can leave a star rating and written review; others can mark reviews as helpful
-- **Email OTP auth** — passwordless sign-in; only needed to submit reviews (browsing is public)
+- **Ratings and reviews** — authenticated users can leave a rating, written review, questions, and answers; others can mark reviews as helpful
+- **Platform SSO** — posting uses Nubisco Platform sign-in and app membership rules; browsing remains public
 - **JSON API** — running openbridge instances can query `GET /api/plugins` to get the plugin catalogue with ratings baked in
 - **Automated crawler** — scheduled job crawls the npm registry every 6 hours and upserts plugin data into the database
 
@@ -53,11 +53,9 @@ openbridge-marketplace/
 
 ### Auth
 
-| Method | Path                   | Description                                              |
-| ------ | ---------------------- | -------------------------------------------------------- |
-| `POST` | `/api/auth/otp/send`   | Send OTP to email. Body: `{ email }`                     |
-| `POST` | `/api/auth/otp/verify` | Verify code, set session cookie. Body: `{ email, code }` |
-| `POST` | `/api/auth/logout`     | Clear session                                            |
+| Method | Path                        | Description                                 |
+| ------ | --------------------------- | ------------------------------------------- |
+| `GET`  | `/api/auth/platform/config` | Returns runtime SSO config for the frontend |
 
 ### Reviews (auth required)
 
@@ -77,7 +75,7 @@ openbridge-marketplace/
 ```bash
 # 1. Copy env file
 cp .env.example .env
-# Edit .env — set DATABASE_URL and JWT_SECRET
+# Edit .env — set DATABASE_URL, PLATFORM_ISSUER, and PLATFORM_APP_ID
 
 # 2. Start PostgreSQL (or use docker compose for just the DB)
 docker compose up db -d
@@ -111,7 +109,7 @@ The CI → Release → Deploy chain runs automatically on every merge to `master
 # On the NAS
 mkdir -p /volume1/docker/openbridge-marketplace
 cd /volume1/docker/openbridge-marketplace
-cp .env.example .env   # fill in DATABASE_URL, JWT_SECRET, POSTGRES_PASSWORD
+cp .env.example .env   # fill in DATABASE_URL, PLATFORM_ISSUER, PLATFORM_APP_ID, POSTGRES_PASSWORD
 docker compose up -d
 ```
 
@@ -132,3 +130,13 @@ GET https://marketplace.openbridge.nubisco.io/api/plugins?sort=downloads&limit=2
 ```
 
 The response includes `rating_avg` and `rating_count` per plugin, giving users community signal directly in the openbridge UI.
+
+## Quality gate
+
+Before committing or pushing, run:
+
+```sh
+pnpm run quality:check
+```
+
+The local hooks are expected to enforce the same rule automatically. Tests, linting, formatting, and type checks must all pass before a commit is considered valid.
