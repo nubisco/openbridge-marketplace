@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.5.6...v1.6.0) (2026-04-18)
+
+
+### Features
+
+* migrate auth from local OTP/JWT to Nubisco Platform SSO ([f796f3a](https://github.com/nubisco/openbridge-marketplace/commit/f796f3a24c8e8773447afa5203654592ecaa8da1))
+
 ## [1.5.6](https://github.com/nubisco/openbridge-marketplace/compare/v1.5.5...v1.5.6) (2026-04-17)
 
 
