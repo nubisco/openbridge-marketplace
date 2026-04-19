@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.6.0...v1.7.0) (2026-04-19)
+
+
+### Features
+
+* prepare marketplace for public source release ([6c6614d](https://github.com/nubisco/openbridge-marketplace/commit/6c6614d09b4814491032e79c398817c7e061152b))
+
 # [1.6.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.5.6...v1.6.0) (2026-04-18)
 
 
