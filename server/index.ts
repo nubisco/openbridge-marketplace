@@ -8,6 +8,7 @@ import { verifyPlatformToken, rateLimit } from './auth'
 import type {
   PluginListResponse,
   PluginDetailResponse,
+  RankingMetaResponse,
   Review,
   ReviewReply,
   Question,
@@ -17,6 +18,11 @@ import type {
 const app = new Hono()
 const PORT = Number(process.env.PORT ?? 3000)
 const ADMIN_SECRET = process.env.ADMIN_SECRET
+const RANKING_WEIGHTS = {
+  downloads: 0.45,
+  reviews: 0.35,
+  freshness: 0.2,
+} as const
 
 app.use('*', logger())
 app.use('/api/*', cors())
@@ -57,6 +63,23 @@ app.get('/api/auth/platform/config', (c) => {
   })
 })
 
+app.get('/api/meta/ranking', (c) => {
+  return c.json({
+    default_sort: 'best',
+    supported_sorts: ['best', 'downloads', 'rating', 'updated'],
+    signals: {
+      review_score:
+        'Wilson lower bound over thumb-up/thumb-down votes, so a few early votes do not outweigh a stronger long-term signal.',
+      download_score:
+        'Log-scaled weekly download volume to reflect adoption without letting the largest packages dominate completely.',
+      freshness_score: 'Decay-based recency score from the latest published version date.',
+      ranking_score:
+        'Weighted combination of download, review, and freshness scores, with additional text-match boosts when a search query is present.',
+    },
+    weights: RANKING_WEIGHTS,
+  } satisfies RankingMetaResponse)
+})
+
 // ── Plugin list ────────────────────────────────────────────────────────────────
 
 app.get('/api/plugins', async (c) => {
@@ -66,19 +89,28 @@ app.get('/api/plugins', async (c) => {
   }
 
   const q = c.req.query('q') ?? ''
-  const sort = c.req.query('sort') ?? 'downloads'
+  const sort = c.req.query('sort') ?? 'best'
   const page = Math.max(1, Number(c.req.query('page') ?? 1))
   const limit = Math.min(100, Math.max(1, Number(c.req.query('limit') ?? 24)))
   const offset = (page - 1) * limit
+  const normalizedSort =
+    sort === 'downloads' || sort === 'updated' || sort === 'rating' || sort === 'votes' ? sort : 'best'
+  const query = q.trim()
+  const queryContains = `%${query}%`
+  const queryPrefix = `${query}%`
 
   const orderBy =
-    sort === 'updated'
-      ? sql`last_published_at DESC NULLS LAST`
-      : sort === 'votes'
-        ? sql`(thumb_up - thumb_down) DESC`
-        : sql`weekly_downloads DESC`
+    normalizedSort === 'updated'
+      ? sql`last_published_at DESC NULLS LAST, ranking_score DESC, weekly_downloads DESC`
+      : normalizedSort === 'rating' || normalizedSort === 'votes'
+        ? sql`review_score DESC, thumb_up DESC, weekly_downloads DESC, last_published_at DESC NULLS LAST`
+        : normalizedSort === 'downloads'
+          ? sql`weekly_downloads DESC, review_score DESC, last_published_at DESC NULLS LAST`
+          : query
+            ? sql`text_score DESC, ranking_score DESC, weekly_downloads DESC, last_published_at DESC NULLS LAST`
+            : sql`ranking_score DESC, weekly_downloads DESC, last_published_at DESC NULLS LAST`
 
-  const search = q ? sql`AND (p.name ILIKE ${'%' + q + '%'} OR p.description ILIKE ${'%' + q + '%'})` : sql``
+  const search = query ? sql`AND (p.name ILIKE ${queryContains} OR p.description ILIKE ${queryContains})` : sql``
 
   const [plugins, [{ count }]] = await Promise.all([
     sql<
@@ -99,19 +131,74 @@ app.get('/api/plugins', async (c) => {
         last_published_at: string
         thumb_up: number
         thumb_down: number
+        review_score: number
+        download_score: number
+        freshness_score: number
+        ranking_score: number
       }[]
     >`
+      WITH plugin_metrics AS (
+        SELECT
+          p.name, p.display_name, p.description, p.version, p.author,
+          p.homepage, p.repository_url, p.npm_url,
+          p.weekly_downloads, p.github_stars, p.github_sponsors_url,
+          p.verified, p.deprecated, p.last_published_at,
+          COUNT(CASE WHEN r.vote = 1 THEN 1 END)::int AS thumb_up,
+          COUNT(CASE WHEN r.vote = -1 THEN 1 END)::int AS thumb_down,
+          COUNT(r.id)::int AS review_count,
+          CASE
+            WHEN COUNT(r.id) = 0 THEN 0::float8
+            ELSE (
+              (
+                ((COUNT(CASE WHEN r.vote = 1 THEN 1 END)::float8 / COUNT(r.id)::float8) + (1.96 * 1.96) / (2 * COUNT(r.id)::float8))
+                - 1.96 * sqrt(
+                  (
+                    (
+                      (COUNT(CASE WHEN r.vote = 1 THEN 1 END)::float8 / COUNT(r.id)::float8)
+                      * (1 - (COUNT(CASE WHEN r.vote = 1 THEN 1 END)::float8 / COUNT(r.id)::float8))
+                    )
+                    + (1.96 * 1.96) / (4 * COUNT(r.id)::float8)
+                  ) / COUNT(r.id)::float8
+                )
+              ) / (1 + (1.96 * 1.96) / COUNT(r.id)::float8)
+            )
+          END AS review_score,
+          LEAST(1.0, LN((GREATEST(p.weekly_downloads, 0) + 1)::numeric) / LN(100001::numeric))::float8 AS download_score,
+          CASE
+            WHEN p.last_published_at IS NULL THEN 0::float8
+            ELSE EXP(-GREATEST(0, EXTRACT(EPOCH FROM (NOW() - p.last_published_at)) / 86400) / 180.0)::float8
+          END AS freshness_score,
+          CASE
+            WHEN ${query} = '' THEN 0::float8
+            WHEN LOWER(p.name) = LOWER(${query}) THEN 3.0
+            WHEN LOWER(p.name) LIKE LOWER(${queryPrefix}) THEN 1.75
+            WHEN LOWER(p.name) LIKE LOWER(${queryContains}) THEN 1.1
+            WHEN LOWER(COALESCE(p.description, '')) LIKE LOWER(${queryContains}) THEN 0.4
+            ELSE 0::float8
+          END AS text_score
+        FROM plugins p
+        LEFT JOIN reviews r ON r.plugin_name = p.name
+        WHERE NOT p.deprecated ${search}
+        GROUP BY p.name
+      ),
+      ranked AS (
+        SELECT
+          *,
+          (
+            (${RANKING_WEIGHTS.downloads} * download_score) +
+            (${RANKING_WEIGHTS.reviews} * review_score) +
+            (${RANKING_WEIGHTS.freshness} * freshness_score) +
+            text_score
+          )::float8 AS ranking_score
+        FROM plugin_metrics
+      )
       SELECT
-        p.name, p.display_name, p.description, p.version, p.author,
-        p.homepage, p.repository_url, p.npm_url,
-        p.weekly_downloads, p.github_stars, p.github_sponsors_url,
-        p.verified, p.deprecated, p.last_published_at,
-        COUNT(CASE WHEN r.vote = 1 THEN 1 END)::int AS thumb_up,
-        COUNT(CASE WHEN r.vote = -1 THEN 1 END)::int AS thumb_down
-      FROM plugins p
-      LEFT JOIN reviews r ON r.plugin_name = p.name
-      WHERE NOT p.deprecated ${search}
-      GROUP BY p.name
+        name, display_name, description, version, author,
+        homepage, repository_url, npm_url,
+        weekly_downloads, github_stars, github_sponsors_url,
+        verified, deprecated, last_published_at,
+        thumb_up, thumb_down, review_score, download_score, freshness_score, ranking_score
+      FROM ranked
       ORDER BY ${orderBy}
       LIMIT ${limit} OFFSET ${offset}
     `,
@@ -137,7 +224,53 @@ app.get('/api/plugins/:name{.+}', async (c) => {
     sql`
       SELECT p.*,
         COUNT(CASE WHEN r.vote = 1 THEN 1 END)::int AS thumb_up,
-        COUNT(CASE WHEN r.vote = -1 THEN 1 END)::int AS thumb_down
+        COUNT(CASE WHEN r.vote = -1 THEN 1 END)::int AS thumb_down,
+        CASE
+          WHEN COUNT(r.id) = 0 THEN 0::float8
+          ELSE (
+            (
+              ((COUNT(CASE WHEN r.vote = 1 THEN 1 END)::float8 / COUNT(r.id)::float8) + (1.96 * 1.96) / (2 * COUNT(r.id)::float8))
+              - 1.96 * sqrt(
+                (
+                  (
+                    (COUNT(CASE WHEN r.vote = 1 THEN 1 END)::float8 / COUNT(r.id)::float8)
+                    * (1 - (COUNT(CASE WHEN r.vote = 1 THEN 1 END)::float8 / COUNT(r.id)::float8))
+                  )
+                  + (1.96 * 1.96) / (4 * COUNT(r.id)::float8)
+                ) / COUNT(r.id)::float8
+              )
+            ) / (1 + (1.96 * 1.96) / COUNT(r.id)::float8)
+          )
+        END AS review_score,
+        LEAST(1.0, LN((GREATEST(p.weekly_downloads, 0) + 1)::numeric) / LN(100001::numeric))::float8 AS download_score,
+        CASE
+          WHEN p.last_published_at IS NULL THEN 0::float8
+          ELSE EXP(-GREATEST(0, EXTRACT(EPOCH FROM (NOW() - p.last_published_at)) / 86400) / 180.0)::float8
+        END AS freshness_score,
+        (
+          (${RANKING_WEIGHTS.downloads} * LEAST(1.0, LN((GREATEST(p.weekly_downloads, 0) + 1)::numeric) / LN(100001::numeric))::float8) +
+          (${RANKING_WEIGHTS.reviews} * CASE
+            WHEN COUNT(r.id) = 0 THEN 0::float8
+            ELSE (
+              (
+                ((COUNT(CASE WHEN r.vote = 1 THEN 1 END)::float8 / COUNT(r.id)::float8) + (1.96 * 1.96) / (2 * COUNT(r.id)::float8))
+                - 1.96 * sqrt(
+                  (
+                    (
+                      (COUNT(CASE WHEN r.vote = 1 THEN 1 END)::float8 / COUNT(r.id)::float8)
+                      * (1 - (COUNT(CASE WHEN r.vote = 1 THEN 1 END)::float8 / COUNT(r.id)::float8))
+                    )
+                    + (1.96 * 1.96) / (4 * COUNT(r.id)::float8)
+                  ) / COUNT(r.id)::float8
+                )
+              ) / (1 + (1.96 * 1.96) / COUNT(r.id)::float8)
+            )
+          END) +
+          (${RANKING_WEIGHTS.freshness} * CASE
+            WHEN p.last_published_at IS NULL THEN 0::float8
+            ELSE EXP(-GREATEST(0, EXTRACT(EPOCH FROM (NOW() - p.last_published_at)) / 86400) / 180.0)::float8
+          END)
+        )::float8 AS ranking_score
       FROM plugins p
       LEFT JOIN reviews r ON r.plugin_name = p.name
       WHERE p.name = ${name}

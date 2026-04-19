@@ -1,0 +1,50 @@
+# Configuration for actions/labeler
+# Labels are applied to PRs based on file paths changed
+
+frontend:
+  - changed-files:
+      - any-glob-to-any-file: 'src/**'
+
+api:
+  - changed-files:
+      - any-glob-to-any-file: 'server/**'
+
+shared-types:
+  - changed-files:
+      - any-glob-to-any-file: 'shared/**'
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**'
+          - '*.md'
+          - '!CHANGELOG.md'
+
+legal:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'LICENSE'
+          - 'TRADEMARKS.md'
+          - 'src/views/PrivacyView.vue'
+          - 'src/views/TermsView.vue'
+          - 'src/views/TransparencyView.vue'
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: '.github/**'
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'package.json'
+          - 'bun.lock'
+          - 'pnpm-lock.yaml'
+
+tooling:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'tsconfig*.json'
+          - 'vite.config.ts'
+          - 'eslint.config.mjs'
+          - '.prettierrc*'
+          - '.editorconfig'

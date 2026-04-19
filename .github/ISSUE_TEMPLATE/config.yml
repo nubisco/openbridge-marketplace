@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://marketplace.openbridge.nubisco.io/transparency
+    about: Read the marketplace transparency page before opening policy or ranking questions.
+  - name: Security policy
+    url: https://github.com/nubisco/openbridge-marketplace/blob/master/SECURITY.md
+    about: Report vulnerabilities privately using the project's responsible disclosure process.

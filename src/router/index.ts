@@ -32,6 +32,11 @@ export const router = createRouter({
           name: 'terms',
           component: () => import('@/views/TermsView.vue'),
         },
+        {
+          path: 'transparency',
+          name: 'transparency',
+          component: () => import('@/views/TransparencyView.vue'),
+        },
       ],
     },
   ],

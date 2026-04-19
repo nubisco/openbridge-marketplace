@@ -2,16 +2,37 @@
 
 Public plugin directory for [homebridge-\*](https://www.npmjs.com/search?q=homebridge-) and [openbridge-\*](https://www.npmjs.com/search?q=openbridge-) npm packages. Similar in concept to the VS Code Marketplace — browse, search, and rate plugins. Deployed at **marketplace.openbridge.nubisco.io**.
 
+This repository is intentionally public so the community can inspect the code, the ranking logic, and the marketplace mechanics. It is source-available, not OSI open source. See [LICENSE](LICENSE) and [TRADEMARKS.md](TRADEMARKS.md).
+
 Running openbridge instances can also fetch the plugin list from the JSON API instead of querying npm directly, getting community ratings alongside install metadata.
 
 ## What it does
 
 - **Plugin directory** — browse all homebridge-\* and openbridge-\* packages from npm, with download stats, version info, and descriptions
 - **Search and sort** — full-text search, sort by most downloaded / top rated / recently updated
+- **Transparent ranking** — default search ordering blends download adoption, review quality, and recency instead of relying on a binary trust badge
 - **Ratings and reviews** — authenticated users can leave a rating, written review, questions, and answers; others can mark reviews as helpful
 - **Platform SSO** — posting uses Nubisco Platform sign-in and app membership rules; browsing remains public
 - **JSON API** — running openbridge instances can query `GET /api/plugins` to get the plugin catalogue with ratings baked in
 - **Automated crawler** — scheduled job crawls the npm registry every 6 hours and upserts plugin data into the database
+
+## Ranking philosophy
+
+The marketplace is designed to help users feel quality quickly without falling back to a simple verified/unverified split.
+
+Today the default ranking combines:
+
+- **Adoption** — weekly download volume, log-scaled so the very largest packages do not dominate everything else
+- **Review quality** — thumbs up/down are converted into a conservative Wilson lower-bound score, which avoids over-rewarding tiny sample sizes
+- **Maintenance recency** — recently published packages receive a higher freshness score
+- **Search intent** — when a user searches for a term like `tuya`, closer name matches are boosted before the weighted quality signals are applied
+
+The API exposes this publicly:
+
+- `GET /api/plugins?sort=best`
+- `GET /api/meta/ranking`
+
+The goal is straightforward: if a user searches for a plugin family, stronger maintained packages with better adoption and better review history should surface first.
 
 ## Architecture
 
@@ -45,11 +66,12 @@ openbridge-marketplace/
 
 ### Public endpoints (no auth required)
 
-| Method | Path                 | Description                                                                           |
-| ------ | -------------------- | ------------------------------------------------------------------------------------- |
-| `GET`  | `/api/plugins`       | List plugins. Params: `q`, `sort` (`downloads`\|`rating`\|`updated`), `page`, `limit` |
-| `GET`  | `/api/plugins/:name` | Plugin detail + reviews                                                               |
-| `GET`  | `/api/stats`         | `{ plugin_count, review_count }`                                                      |
+| Method | Path                 | Description                                                                                   |
+| ------ | -------------------- | --------------------------------------------------------------------------------------------- |
+| `GET`  | `/api/plugins`       | List plugins. Params: `q`, `sort` (`best`\|`downloads`\|`rating`\|`updated`), `page`, `limit` |
+| `GET`  | `/api/plugins/:name` | Plugin detail + reviews                                                                       |
+| `GET`  | `/api/stats`         | `{ plugin_count, review_count }`                                                              |
+| `GET`  | `/api/meta/ranking`  | Ranking weights and signal explanations                                                       |
 
 ### Auth
 
@@ -126,10 +148,13 @@ docker compose up -d
 Running openbridge instances can replace their npm registry calls with:
 
 ```
-GET https://marketplace.openbridge.nubisco.io/api/plugins?sort=downloads&limit=250
+GET https://marketplace.openbridge.nubisco.io/api/plugins?sort=best&limit=250
 ```
 
 The response includes `rating_avg` and `rating_count` per plugin, giving users community signal directly in the openbridge UI.
+The response includes download, review, and freshness signals, along with the aggregated thumb-up/thumb-down counts used by the marketplace ranking model.
+
+OpenBridge may choose to support custom marketplace endpoints in the future, but the official default marketplace service is the Nubisco-operated deployment under the official marketplace domain.
 
 ## Quality gate
 

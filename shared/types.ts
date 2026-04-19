@@ -29,6 +29,10 @@ export interface Plugin {
   // aggregated from reviews table
   thumb_up: number
   thumb_down: number
+  review_score: number
+  download_score: number
+  freshness_score: number
+  ranking_score: number
 }
 
 export type PluginSummary = Pick<
@@ -49,6 +53,10 @@ export type PluginSummary = Pick<
   | 'last_published_at'
   | 'thumb_up'
   | 'thumb_down'
+  | 'review_score'
+  | 'download_score'
+  | 'freshness_score'
+  | 'ranking_score'
 >
 
 // ── Q&A ───────────────────────────────────────────────────────────────────────
@@ -100,6 +108,22 @@ export interface PluginListResponse {
   total: number
   page: number
   limit: number
+}
+
+export interface RankingMetaResponse {
+  default_sort: 'best'
+  supported_sorts: Array<'best' | 'downloads' | 'rating' | 'updated'>
+  signals: {
+    review_score: string
+    download_score: string
+    freshness_score: string
+    ranking_score: string
+  }
+  weights: {
+    downloads: number
+    reviews: number
+    freshness: number
+  }
 }
 
 export interface PluginDetailResponse {

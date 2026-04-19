@@ -10,7 +10,6 @@
       <div class="plugin-header__info">
         <div class="plugin-header__title-row">
           <h1 class="plugin-header__name">{{ plugin.name }}</h1>
-          <NbBadge v-if="plugin.verified" variant="green">Verified</NbBadge>
           <NbBadge v-if="isOpenBridge" variant="purple">Native</NbBadge>
         </div>
         <p v-if="plugin.author" class="plugin-header__author">by {{ plugin.author }}</p>
@@ -23,9 +22,7 @@
             <span class="hdr-sep">|</span>
             <span class="hdr-stat hdr-stat--votes">
               <NbIcon name="thumbs-up" :size="13" class="vote-up" />
-              {{ plugin.thumb_up }}
-              <NbIcon name="thumbs-down" :size="13" class="vote-down" />
-              {{ plugin.thumb_down }}
+              {{ positiveReviewRatio }}
             </span>
           </template>
         </div>
@@ -491,6 +488,14 @@ const versions = computed<{ version: string; date: string }[]>(() => {
       ? { version: item[0] as string, date: item[1] as string }
       : (item as { version: string; date: string }),
   )
+})
+
+const positiveReviewRatio = computed(() => {
+  const current = plugin.value
+  if (!current) return ''
+  const totalVotes = current.thumb_up + current.thumb_down
+  if (totalVotes === 0) return 'No reviews'
+  return `${Math.round((current.thumb_up / totalVotes) * 100)}% positive`
 })
 
 function resolveReadmeImages(html: string, repositoryUrl: string | null | undefined): string {

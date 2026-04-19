@@ -1,0 +1,37 @@
+name: Policy / transparency request
+description: Ask about ranking visibility, moderation, or marketplace policy behavior
+labels: [policy]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for questions or proposals about ranking visibility, transparency language, moderation rules, or public marketplace mechanics.
+
+  - type: textarea
+    id: topic
+    attributes:
+      label: Topic
+      description: What policy or transparency area is involved?
+      placeholder: Ranking weights, review ordering, moderation, analytics disclosure, legal wording
+    validations:
+      required: true
+
+  - type: textarea
+    id: request
+    attributes:
+      label: Request or concern
+      description: What should change, or what needs clarification?
+    validations:
+      required: true
+
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Rationale
+      description: Why should this be changed or clarified?
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Relevant screenshots, API responses, links, or prior discussion

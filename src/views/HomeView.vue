@@ -3,20 +3,33 @@
     <!-- Hero search -->
     <div class="hero">
       <h1 class="hero__title">Find Openbridge & Homebridge Plugins</h1>
-      <p class="hero__sub">{{ stats?.plugin_count?.toLocaleString() ?? '…' }} plugins · community-rated</p>
+      <p class="hero__sub">
+        {{ stats?.plugin_count?.toLocaleString() ?? '…' }} plugins · ranked by adoption, maintenance, and community
+        feedback
+      </p>
       <div class="hero__search">
         <NbTextInput v-model="q" placeholder="Search plugins…" size="lg" class="search-input" @input="onSearch" />
       </div>
       <div class="hero__sort">
-        <NbButton :variant="sort === 'downloads' ? 'primary' : 'ghost'" size="sm" @click="sort = 'downloads'"
-          >Most downloaded</NbButton
+        <NbButton :variant="sort === 'best' ? 'primary' : 'ghost'" size="sm" @click="sort = 'best'"
+          >Best match</NbButton
         >
-        <NbButton :variant="sort === 'votes' ? 'primary' : 'ghost'" size="sm" @click="sort = 'votes'"
-          >Top rated</NbButton
+        <NbButton :variant="sort === 'downloads' ? 'primary' : 'ghost'" size="sm" @click="sort = 'downloads'">
+          Most downloaded
+        </NbButton>
+        <NbButton :variant="sort === 'rating' ? 'primary' : 'ghost'" size="sm" @click="sort = 'rating'"
+          >Best reviewed</NbButton
         >
         <NbButton :variant="sort === 'updated' ? 'primary' : 'ghost'" size="sm" @click="sort = 'updated'"
           >Recently updated</NbButton
         >
+      </div>
+      <p class="hero__hint">
+        Search results favor stronger query matches, then blend download volume, review quality, and recent maintenance.
+      </p>
+      <div class="hero__transparency">
+        <span>Ranking is transparent.</span>
+        <RouterLink to="/transparency">See how plugins are sorted and which signals matter.</RouterLink>
       </div>
     </div>
 
@@ -27,7 +40,7 @@
       <RouterLink v-for="p in plugins" :key="p.name" :to="`/plugins/${p.name}`" class="plugin-card">
         <div class="plugin-card__head">
           <span class="plugin-card__name">{{ p.name }}</span>
-          <NbBadge v-if="p.verified" variant="green" size="sm">Verified</NbBadge>
+          <NbBadge v-if="p.name.startsWith('openbridge-')" variant="blue" size="sm">OpenBridge</NbBadge>
         </div>
         <p class="plugin-card__desc">{{ p.description ?? 'No description.' }}</p>
         <div class="plugin-card__meta">
@@ -38,9 +51,11 @@
           </span>
           <span v-if="p.thumb_up + p.thumb_down > 0" class="meta-stat">
             <NbIcon name="thumbs-up" :size="11" class="meta-up" />
-            {{ p.thumb_up }}
-            <NbIcon name="thumbs-down" :size="11" class="meta-down" />
-            {{ p.thumb_down }}
+            {{ positiveReviewRatio(p) }}
+          </span>
+          <span v-if="p.last_published_at" class="meta-stat">
+            <NbIcon name="clock-counter-clockwise" :size="11" />
+            {{ formatRelativeDate(p.last_published_at) }}
           </span>
         </div>
       </RouterLink>
@@ -57,10 +72,11 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import type { PluginSummary } from '../../shared/types'
 
 const q = ref('')
-const sort = ref<'downloads' | 'votes' | 'updated'>('downloads')
+const sort = ref<'best' | 'downloads' | 'rating' | 'updated'>('best')
 const page = ref(1)
 const limit = 24
 const plugins = ref<PluginSummary[]>([])
@@ -99,6 +115,27 @@ async function fetchStats() {
   stats.value = await res.json()
 }
 
+function positiveReviewRatio(plugin: PluginSummary): string {
+  const totalVotes = plugin.thumb_up + plugin.thumb_down
+  if (totalVotes === 0) return 'No reviews'
+  return `${Math.round((plugin.thumb_up / totalVotes) * 100)}% positive`
+}
+
+function formatRelativeDate(value: string): string {
+  const then = new Date(value).getTime()
+  const now = Date.now()
+  const days = Math.max(0, Math.round((now - then) / 86_400_000))
+
+  if (days <= 1) return 'updated today'
+  if (days < 30) return `${days}d ago`
+
+  const months = Math.round(days / 30)
+  if (months < 12) return `${months}mo ago`
+
+  const years = Math.round(days / 365)
+  return `${years}y ago`
+}
+
 watch([sort, page], fetchPlugins, { immediate: true })
 fetchStats()
 </script>
@@ -134,6 +171,31 @@ fetchStats()
   justify-content: center;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+.hero__hint {
+  margin: 0.85rem auto 0;
+  max-width: 760px;
+  font-size: 0.84rem;
+  color: var(--nb-c-text-subtle);
+  line-height: 1.6;
+}
+
+.hero__transparency {
+  margin: 0.9rem auto 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-size: 0.84rem;
+  color: var(--nb-c-text-subtle);
+
+  a {
+    color: #7c3aed;
+    text-decoration: none;
+    font-weight: 600;
+  }
 }
 
 .plugin-grid {

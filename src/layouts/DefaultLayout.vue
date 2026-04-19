@@ -10,6 +10,7 @@
 
         <nav class="site-header__nav" aria-label="Main navigation">
           <RouterLink to="/">Browse</RouterLink>
+          <RouterLink to="/transparency">How ranking works</RouterLink>
         </nav>
 
         <div class="site-header__actions">
@@ -42,6 +43,7 @@
       <Transition name="mobile-nav">
         <div v-show="mobileOpen" class="site-header__mobile">
           <RouterLink to="/" @click="mobileOpen = false">Browse</RouterLink>
+          <RouterLink to="/transparency" @click="mobileOpen = false">How ranking works</RouterLink>
           <a href="https://github.com/nubisco/openbridge" target="_blank" rel="noopener" @click="mobileOpen = false">
             GitHub
           </a>
@@ -75,6 +77,7 @@
             <h3 class="site-footer__heading">Resources</h3>
             <ul role="list">
               <li><RouterLink to="/">Browse Plugins</RouterLink></li>
+              <li><RouterLink to="/transparency">How ranking works</RouterLink></li>
               <li>
                 <a href="https://github.com/nubisco/openbridge" target="_blank" rel="noopener">Openbridge on GitHub</a>
               </li>
@@ -108,6 +111,7 @@
             <ul role="list">
               <li><RouterLink to="/privacy">Privacy Policy</RouterLink></li>
               <li><RouterLink to="/terms">Terms of Service</RouterLink></li>
+              <li><RouterLink to="/transparency">Transparency</RouterLink></li>
             </ul>
           </div>
         </div>
