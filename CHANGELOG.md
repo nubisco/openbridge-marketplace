@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/nubisco/openbridge-marketplace/compare/v1.7.0...v1.7.1) (2026-04-22)
+
+
+### Bug Fixes
+
+* missing plugins from database ([9d497ef](https://github.com/nubisco/openbridge-marketplace/commit/9d497eff435428eac3fd1a30f19f97ebde00f2b1))
+
 # [1.7.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.6.0...v1.7.0) (2026-04-19)
 
 
