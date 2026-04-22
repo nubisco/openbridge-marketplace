@@ -118,6 +118,89 @@ function parseRepoUrl(repo: NpmPackageDetail['repository']): string | null {
   return raw.replace(/^git\+/, '').replace(/\.git$/, '') || null
 }
 
+// ── Single-plugin enrichment & upsert ─────────────────────────────────────────
+
+const VALID_KEYWORDS = new Set(['homebridge-plugin', 'openbridge-plugin'])
+
+/**
+ * Fetch a single plugin directly from npm by name, validate it, enrich it,
+ * and upsert into the database. Returns true if the plugin was synced.
+ *
+ * Used as a self-healing fallback when a plugin exists on npm but was missed
+ * by the search-based crawler (npm search API doesn't guarantee completeness).
+ */
+export async function syncSinglePlugin(name: string): Promise<boolean> {
+  if (EXCLUDED_PACKAGES.has(name)) return false
+
+  const detail = await fetchPackageDetail(name)
+  if (!detail) return false
+
+  // Validate it declares itself as a homebridge/openbridge plugin
+  const kws = detail.keywords ?? []
+  if (!kws.some((k) => VALID_KEYWORDS.has(k))) return false
+
+  const latest = detail['dist-tags']?.latest
+  if (!latest) return false
+  const manifest = detail.versions?.[latest]
+
+  const weeklyDownloads = await fetchWeeklyDownloads(name)
+  const repoUrl = parseRepoUrl(detail.repository ?? null)
+  const githubRepo = extractGithubRepo(repoUrl)
+  const githubSponsorsUrl = githubRepo ? `https://github.com/sponsors/${githubRepo.split('/')[0]}` : null
+  const githubStars = githubRepo ? await fetchGithubStars(githubRepo) : null
+
+  const lastPublishedAt = detail.time?.[latest] ?? null
+  const versionHistory = detail.time ? parseVersionHistory(detail.time) : []
+  const readme = detail.readme ? detail.readme.slice(0, 65_536) : null
+
+  await sql`
+    INSERT INTO plugins (
+      name, display_name, description, version, author, homepage,
+      repository_url, npm_url, keywords, engines, versions, readme,
+      weekly_downloads, github_stars, github_sponsors_url,
+      deprecated, last_published_at, synced_at
+    ) VALUES (
+      ${name},
+      ${name.replace(/^(@[\w-]+\/)?(homebridge|openbridge)-/, '').replace(/-/g, ' ')},
+      ${detail.description ?? null},
+      ${latest},
+      ${parseAuthor(detail.author ?? manifest?.author ?? null)},
+      ${detail.homepage ?? null},
+      ${repoUrl},
+      ${'https://www.npmjs.com/package/' + name},
+      ${JSON.stringify(kws)},
+      ${JSON.stringify(manifest?.engines ?? {})},
+      ${JSON.stringify(versionHistory)},
+      ${readme},
+      ${weeklyDownloads},
+      ${githubStars},
+      ${githubSponsorsUrl},
+      ${false},
+      ${lastPublishedAt},
+      NOW()
+    )
+    ON CONFLICT (name) DO UPDATE SET
+      display_name          = EXCLUDED.display_name,
+      description           = EXCLUDED.description,
+      version               = EXCLUDED.version,
+      author                = EXCLUDED.author,
+      homepage              = EXCLUDED.homepage,
+      repository_url        = EXCLUDED.repository_url,
+      keywords              = EXCLUDED.keywords,
+      engines               = EXCLUDED.engines,
+      versions              = EXCLUDED.versions,
+      readme                = EXCLUDED.readme,
+      weekly_downloads      = EXCLUDED.weekly_downloads,
+      github_stars          = EXCLUDED.github_stars,
+      github_sponsors_url   = EXCLUDED.github_sponsors_url,
+      deprecated            = EXCLUDED.deprecated,
+      last_published_at     = EXCLUDED.last_published_at,
+      synced_at             = NOW()
+  `
+
+  return true
+}
+
 let crawlInProgress = false
 
 export async function crawl(onProgress?: (msg: string) => void) {
@@ -142,7 +225,6 @@ async function doCrawl(onProgress?: (msg: string) => void) {
   // Collect all unique package names across both prefixes
   // Only include packages that declare themselves as homebridge/openbridge plugins via keywords.
   // This mirrors the homebridge convention: plugins must list "homebridge-plugin" as a keyword.
-  const VALID_KEYWORDS = new Set(['homebridge-plugin', 'openbridge-plugin'])
   const isValidPlugin = (obj: NpmSearchObject): boolean => {
     if (EXCLUDED_PACKAGES.has(obj.package.name)) return false
     const kws = obj.package.keywords ?? []

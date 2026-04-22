@@ -3,7 +3,7 @@ import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { serveStatic } from 'hono/bun'
 import { sql, initDb } from './db'
-import { crawl } from './crawler'
+import { crawl, syncSinglePlugin } from './crawler'
 import { verifyPlatformToken, rateLimit } from './auth'
 import type {
   PluginListResponse,
@@ -292,7 +292,35 @@ app.get('/api/plugins/:name{.+}', async (c) => {
     `,
   ])
 
-  if (!plugin) return c.json({ error: 'Not found' }, 404)
+  if (!plugin) {
+    // Self-healing: plugin may exist on npm but was missed by the crawler's
+    // search-based pagination. Try fetching it directly and upserting.
+    const synced = await syncSinglePlugin(name).catch(() => false)
+    if (!synced) return c.json({ error: 'Not found' }, 404)
+
+    // Re-query the freshly inserted plugin
+    const [freshPlugin] = await sql`
+      SELECT p.*,
+        0::int AS thumb_up, 0::int AS thumb_down,
+        0::float8 AS review_score,
+        LEAST(1.0, LN((GREATEST(p.weekly_downloads, 0) + 1)::numeric) / LN(100001::numeric))::float8 AS download_score,
+        CASE
+          WHEN p.last_published_at IS NULL THEN 0::float8
+          ELSE EXP(-GREATEST(0, EXTRACT(EPOCH FROM (NOW() - p.last_published_at)) / 86400) / 180.0)::float8
+        END AS freshness_score,
+        (
+          (${RANKING_WEIGHTS.downloads} * LEAST(1.0, LN((GREATEST(p.weekly_downloads, 0) + 1)::numeric) / LN(100001::numeric))::float8) +
+          (${RANKING_WEIGHTS.freshness} * CASE
+            WHEN p.last_published_at IS NULL THEN 0::float8
+            ELSE EXP(-GREATEST(0, EXTRACT(EPOCH FROM (NOW() - p.last_published_at)) / 86400) / 180.0)::float8
+          END)
+        )::float8 AS ranking_score
+      FROM plugins p
+      WHERE p.name = ${name}
+    `
+    if (!freshPlugin) return c.json({ error: 'Not found' }, 404)
+    return c.json({ plugin: freshPlugin, reviews: [], questions: [] } satisfies PluginDetailResponse)
+  }
 
   // Fetch replies and answers in parallel
   const reviewIds = rawReviews.map((r) => r.id)
