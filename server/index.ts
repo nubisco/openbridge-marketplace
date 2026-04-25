@@ -295,7 +295,10 @@ app.get('/api/plugins/:name{.+}', async (c) => {
   if (!plugin) {
     // Self-healing: plugin may exist on npm but was missed by the crawler's
     // search-based pagination. Try fetching it directly and upserting.
-    const synced = await syncSinglePlugin(name).catch(() => false)
+    const synced = await syncSinglePlugin(name).catch((err) => {
+      console.error(`[detail] syncSinglePlugin failed for "${name}":`, err)
+      return false
+    })
     if (!synced) return c.json({ error: 'Not found' }, 404)
 
     // Re-query the freshly inserted plugin

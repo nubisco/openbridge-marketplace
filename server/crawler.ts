@@ -130,17 +130,29 @@ const VALID_KEYWORDS = new Set(['homebridge-plugin', 'openbridge-plugin'])
  * by the search-based crawler (npm search API doesn't guarantee completeness).
  */
 export async function syncSinglePlugin(name: string): Promise<boolean> {
-  if (EXCLUDED_PACKAGES.has(name)) return false
+  if (EXCLUDED_PACKAGES.has(name)) {
+    console.log(`[syncSinglePlugin] ${name}: skipped (excluded package)`)
+    return false
+  }
 
   const detail = await fetchPackageDetail(name)
-  if (!detail) return false
+  if (!detail) {
+    console.log(`[syncSinglePlugin] ${name}: npm registry returned no data`)
+    return false
+  }
 
   // Validate it declares itself as a homebridge/openbridge plugin
   const kws = detail.keywords ?? []
-  if (!kws.some((k) => VALID_KEYWORDS.has(k))) return false
+  if (!kws.some((k) => VALID_KEYWORDS.has(k))) {
+    console.log(`[syncSinglePlugin] ${name}: missing plugin keyword (has: ${JSON.stringify(kws)})`)
+    return false
+  }
 
   const latest = detail['dist-tags']?.latest
-  if (!latest) return false
+  if (!latest) {
+    console.log(`[syncSinglePlugin] ${name}: no dist-tags.latest`)
+    return false
+  }
   const manifest = detail.versions?.[latest]
 
   const weeklyDownloads = await fetchWeeklyDownloads(name)
@@ -198,6 +210,7 @@ export async function syncSinglePlugin(name: string): Promise<boolean> {
       synced_at             = NOW()
   `
 
+  console.log(`[syncSinglePlugin] ${name}: synced successfully (v${latest})`)
   return true
 }
 
@@ -238,10 +251,29 @@ async function doCrawl(onProgress?: (msg: string) => void) {
     log(`Searching npm for "${prefix}"...`)
     let from = 0
     let total = Infinity
+    let emptyPages = 0
 
     while (from < total) {
       const page = await fetchSearchPage(prefix, from)
-      total = page.total
+
+      // Only set total from the first page. The npm search API returns an
+      // estimated total that can fluctuate between requests; updating it on
+      // every page risks terminating the loop early when the estimate drops
+      // below the current offset.
+      if (total === Infinity) total = page.total
+
+      if (page.objects.length === 0) {
+        emptyPages++
+        // npm search can return empty pages at high offsets due to
+        // ElasticSearch deep-pagination limitations. Stop after 3
+        // consecutive empty pages to avoid looping until `total`.
+        if (emptyPages >= 3) {
+          log(`  ${prefix}: ${emptyPages} consecutive empty pages at offset ${from}, stopping pagination`)
+          break
+        }
+      } else {
+        emptyPages = 0
+      }
 
       for (const obj of page.objects) {
         if (!seen.has(obj.package.name) && isValidPlugin(obj)) {
@@ -251,7 +283,7 @@ async function doCrawl(onProgress?: (msg: string) => void) {
       }
 
       from += PAGE_SIZE
-      log(`  ${prefix}: fetched ${Math.min(from, total)}/${total}`)
+      log(`  ${prefix}: fetched ${Math.min(from, total)}/${total} (${objects.length} valid plugins so far)`)
     }
   }
 
@@ -331,7 +363,32 @@ async function doCrawl(onProgress?: (msg: string) => void) {
   const excluded = [...EXCLUDED_PACKAGES]
   await sql`DELETE FROM plugins WHERE name = ANY(${excluded})`
 
-  log(`Crawl complete. Synced ${synced} plugins.`)
+  // Re-sync plugins that are in the DB but were missed by this search pass.
+  // The npm search API uses ElasticSearch deep pagination which is unreliable
+  // for large result sets (duplicates, missing entries at high offsets). Plugins
+  // previously discovered (via search or syncSinglePlugin) would go stale
+  // without this catch-up pass.
+  const seenNames = [...seen]
+  const stale = await sql<{ name: string }[]>`
+    SELECT name FROM plugins
+    WHERE NOT (name = ANY(${seenNames}))
+      AND NOT deprecated
+  `
+  if (stale.length > 0) {
+    log(`Re-syncing ${stale.length} plugins missed by search pagination...`)
+    let reSynced = 0
+    for (const { name } of stale) {
+      const ok = await syncSinglePlugin(name).catch((err) => {
+        console.error(`[crawl] re-sync failed for "${name}":`, err)
+        return false
+      })
+      if (ok) reSynced++
+      await sleep(200)
+    }
+    log(`  Re-synced ${reSynced}/${stale.length} stale plugins`)
+  }
+
+  log(`Crawl complete. Synced ${synced} plugins (${stale.length} re-synced from DB).`)
   return synced
 }
 
