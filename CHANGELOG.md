@@ -1,3 +1,10 @@
+## [1.7.2](https://github.com/nubisco/openbridge-marketplace/compare/v1.7.1...v1.7.2) (2026-04-25)
+
+
+### Bug Fixes
+
+* crawler misses plugins due to npm search deep-pagination bugs ([c54b9c0](https://github.com/nubisco/openbridge-marketplace/commit/c54b9c0c931dc100631f9b27449ba476b4e609e6))
+
 ## [1.7.1](https://github.com/nubisco/openbridge-marketplace/compare/v1.7.0...v1.7.1) (2026-04-22)
 
 
