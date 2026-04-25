@@ -334,7 +334,7 @@ app.get('/api/plugins/:name{.+}', async (c) => {
       ? sql<ReviewReply[]>`
           SELECT id, review_id, author_display, body, created_at
           FROM review_replies
-          WHERE review_id = ANY(${sql.array(reviewIds)})
+          WHERE review_id = ANY(${sql.array(reviewIds)}::uuid[])
           ORDER BY created_at ASC
         `
       : ([] as ReviewReply[]),
@@ -342,7 +342,7 @@ app.get('/api/plugins/:name{.+}', async (c) => {
       ? sql<QuestionAnswer[]>`
           SELECT id, question_id, author_display, body, is_accepted, created_at
           FROM question_answers
-          WHERE question_id = ANY(${sql.array(questionIds)})
+          WHERE question_id = ANY(${sql.array(questionIds)}::uuid[])
           ORDER BY is_accepted DESC, created_at ASC
         `
       : ([] as QuestionAnswer[]),
@@ -405,7 +405,7 @@ app.post('/api/reviews/:id/replies', async (c) => {
 
   const [reply] = await sql<ReviewReply[]>`
     INSERT INTO review_replies (review_id, author_email_hash, author_display, body)
-    VALUES (${reviewId}, ${user.sub}, ${user.display}, ${replyBody})
+    VALUES (${reviewId}::uuid, ${user.sub}, ${user.display}, ${replyBody})
     RETURNING id, review_id, author_display, body, created_at
   `
   return c.json(reply, 201)
@@ -417,7 +417,7 @@ app.post('/api/reviews/:id/helpful', async (c) => {
   if (!rateLimit(`helpful:${ip}`, 5, 60_000)) return c.json({ error: 'rate_limited' }, 429)
 
   const { id } = c.req.param()
-  await sql`UPDATE reviews SET helpful_count = helpful_count + 1 WHERE id = ${id}`
+  await sql`UPDATE reviews SET helpful_count = helpful_count + 1 WHERE id = ${id}::uuid`
   return c.json({ ok: true })
 })
 
@@ -458,7 +458,7 @@ app.post('/api/questions/:id/answers', async (c) => {
 
   const [answer] = await sql<QuestionAnswer[]>`
     INSERT INTO question_answers (question_id, author_email_hash, author_display, body)
-    VALUES (${questionId}, ${user.sub}, ${user.display}, ${answerBody})
+    VALUES (${questionId}::uuid, ${user.sub}, ${user.display}, ${answerBody})
     RETURNING id, question_id, author_display, body, is_accepted, created_at
   `
   return c.json(answer, 201)
