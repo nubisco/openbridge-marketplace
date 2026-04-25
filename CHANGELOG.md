@@ -1,3 +1,10 @@
+## [1.7.3](https://github.com/nubisco/openbridge-marketplace/compare/v1.7.2...v1.7.3) (2026-04-25)
+
+
+### Bug Fixes
+
+* cast text params to uuid in SQL queries ([df65f07](https://github.com/nubisco/openbridge-marketplace/commit/df65f071cb2c569d9b29dcb5e1cf165174ffbf5c))
+
 ## [1.7.2](https://github.com/nubisco/openbridge-marketplace/compare/v1.7.1...v1.7.2) (2026-04-25)
 
 
