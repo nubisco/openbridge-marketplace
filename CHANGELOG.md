@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.7.3...v1.8.0) (2026-04-26)
+
+
+### Features
+
+* sync sort, search, and page state with URL query params ([c1757c1](https://github.com/nubisco/openbridge-marketplace/commit/c1757c1172c4dea047847566decfcc7e105c113b))
+
 ## [1.7.3](https://github.com/nubisco/openbridge-marketplace/compare/v1.7.2...v1.7.3) (2026-04-25)
 
 
