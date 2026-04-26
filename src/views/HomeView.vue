@@ -71,18 +71,54 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { RouterLink, useRouter, useRoute } from 'vue-router'
 import type { PluginSummary } from '../../shared/types'
 
-const q = ref('')
-const sort = ref<'best' | 'downloads' | 'rating' | 'updated'>('best')
-const page = ref(1)
+const router = useRouter()
+const route = useRoute()
+
+type SortOption = 'best' | 'downloads' | 'rating' | 'updated'
+const VALID_SORTS = new Set<SortOption>(['best', 'downloads', 'rating', 'updated'])
+
+function parseSort(v: unknown): SortOption {
+  return typeof v === 'string' && VALID_SORTS.has(v as SortOption) ? (v as SortOption) : 'best'
+}
+
+const q = ref(typeof route.query.q === 'string' ? route.query.q : '')
+const sort = ref<SortOption>(parseSort(route.query.sort))
+const page = ref(Math.max(1, Number(route.query.page) || 1))
 const limit = 24
 const plugins = ref<PluginSummary[]>([])
 const total = ref(0)
 const loading = ref(false)
 const stats = ref<{ plugin_count: number; review_count: number } | null>(null)
+
+// Prevent the watcher from pushing a duplicate URL during popstate handling
+let suppressUrlUpdate = false
+
+function updateUrl() {
+  if (suppressUrlUpdate) return
+  const query: Record<string, string> = {}
+  if (q.value) query.q = q.value
+  if (sort.value !== 'best') query.sort = sort.value
+  if (page.value > 1) query.page = String(page.value)
+  router.push({ query })
+}
+
+// Restore state when the user navigates back/forward
+function onPopState() {
+  const params = new URLSearchParams(window.location.search)
+  suppressUrlUpdate = true
+  q.value = params.get('q') ?? ''
+  sort.value = parseSort(params.get('sort'))
+  page.value = Math.max(1, Number(params.get('page')) || 1)
+  suppressUrlUpdate = false
+  fetchPlugins()
+}
+
+onMounted(() => window.addEventListener('popstate', onPopState))
+onUnmounted(() => window.removeEventListener('popstate', onPopState))
 
 let searchTimeout: ReturnType<typeof setTimeout>
 function onSearch() {
@@ -91,7 +127,8 @@ function onSearch() {
     if (page.value !== 1) {
       page.value = 1 // watcher will trigger fetchPlugins
     } else {
-      fetchPlugins() // page didn't change, trigger manually
+      fetchPlugins()
+      updateUrl()
     }
   }, 300)
 }
@@ -136,7 +173,14 @@ function formatRelativeDate(value: string): string {
   return `${years}y ago`
 }
 
-watch([sort, page], fetchPlugins, { immediate: true })
+watch(
+  [sort, page],
+  () => {
+    fetchPlugins()
+    updateUrl()
+  },
+  { immediate: true },
+)
 fetchStats()
 </script>
 
