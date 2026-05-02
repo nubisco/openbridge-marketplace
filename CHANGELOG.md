@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.8.0...v1.9.0) (2026-05-02)
+
+
+### Features
+
+* **auth:** force prompt=login on marketplace platform sign-in ([f0fff63](https://github.com/nubisco/openbridge-marketplace/commit/f0fff6374e5b8d75be6008858b4301a4df9009a3))
+
 # [1.8.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.7.3...v1.8.0) (2026-04-26)
 
 
