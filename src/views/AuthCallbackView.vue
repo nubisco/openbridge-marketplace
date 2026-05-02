@@ -58,6 +58,9 @@ async function retryLogin() {
   ssoUrl.searchParams.set('app_id', config.appId)
   ssoUrl.searchParams.set('redirect_uri', callbackUrl.toString())
   ssoUrl.searchParams.set('state', stored.nonce)
+  // Force the platform to prompt for credentials so we never inherit
+  // a stale platform session belonging to a different identity.
+  ssoUrl.searchParams.set('prompt', 'login')
   window.location.assign(ssoUrl.toString())
 }
 
