@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.9.0...v1.10.0) (2026-06-17)
+
+
+### Features
+
+* **analytics:** migrate to @nubisco/analytics shared tracker ([b229dc9](https://github.com/nubisco/openbridge-marketplace/commit/b229dc9968d67521cc667669c1a91e010569f2a2))
+
 # [1.9.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.8.0...v1.9.0) (2026-05-02)
 
 
