@@ -1,54 +1,43 @@
-function getSessionId(): string {
-  const key = 'nba_sid'
-  let id = sessionStorage.getItem(key)
-  if (!id) {
-    id = crypto.randomUUID()
-    sessionStorage.setItem(key, id)
+// Thin wrapper around the @nubisco/analytics tracker script (window.nba.*).
+// Loads the official tracker from VITE_ANALYTICS_URL with data-app set so every
+// event is tagged with app_id="openbridge-marketplace". The tracker
+// auto-instruments pageviews (including SPA navigation), engagement, scroll
+// depth, outbound clicks, and Web Vitals — no need to call trackPageView from
+// the router.
+
+const APP_ID = 'openbridge-marketplace'
+
+interface Nba {
+  track: (name: string, props?: Record<string, unknown>) => void
+  identify: (userId: string, opts?: { appId?: string }) => void
+  reset: () => void
+}
+
+declare global {
+  interface Window {
+    nba?: Nba
   }
-  return id
 }
 
-const analyticsEndpoint = import.meta.env.VITE_ANALYTICS_ENDPOINT as string | undefined
+let initialized = false
 
-function sendEvent(payload: {
-  url: string
-  referrer?: string
-  screenWidth?: number
-  sessionId: string
-  eventType: string
-  eventName: string
-  props?: Record<string, string>
-}): void {
-  if (!analyticsEndpoint) return
-  if (navigator.doNotTrack === '1') return
+export async function initAnalytics(): Promise<void> {
+  if (initialized) return
+  const base = (import.meta.env.VITE_ANALYTICS_URL as string | undefined)?.replace(/\/$/, '')
+  if (!base || !import.meta.env.PROD) return
+  initialized = true
 
-  fetch(analyticsEndpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-    keepalive: true,
-  }).catch(() => {
-    // analytics must never break the page
+  await new Promise<void>((resolve) => {
+    const script = document.createElement('script')
+    script.src = `${base}/script.js`
+    script.defer = true
+    script.dataset.app = APP_ID
+    script.addEventListener('load', () => resolve(), { once: true })
+    script.addEventListener('error', () => resolve(), { once: true })
+    document.head.appendChild(script)
   })
 }
 
-export function trackPageView(path: string): void {
-  sendEvent({
-    url: window.location.origin + path,
-    referrer: document.referrer || undefined,
-    screenWidth: window.screen.width,
-    sessionId: getSessionId(),
-    eventType: 'pageview',
-    eventName: 'pageview',
-  })
-}
-
-export function trackEvent(name: string, props?: Record<string, string>): void {
-  sendEvent({
-    url: window.location.href,
-    sessionId: getSessionId(),
-    eventType: 'custom',
-    eventName: name,
-    props,
-  })
+export function trackEvent(name: string, props?: Record<string, unknown>): void {
+  window.nba?.track(name, props)
 }
