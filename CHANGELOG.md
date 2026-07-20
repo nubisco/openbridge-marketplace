@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.10.0...v1.11.0) (2026-07-20)
+
+
+### Features
+
+* **branding:** new bridge logo and regenerated icon set ([ef04966](https://github.com/nubisco/openbridge-marketplace/commit/ef049663d8efa0b5378f5b7af895f157076b0883))
+
 # [1.10.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.9.0...v1.10.0) (2026-06-17)
 
 
