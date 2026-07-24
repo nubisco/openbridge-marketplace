@@ -46,4 +46,6 @@ jobs:
             ghcr.io/nubisco/openbridge-marketplace:${{ steps.pkg.outputs.version }}
             ghcr.io/nubisco/openbridge-marketplace:latest
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # ignore-error keeps a GHA cache-export failure (e.g. cache quota
+          # exhausted) from failing the job after the image is already pushed.
+          cache-to: type=gha,mode=max,ignore-error=true
