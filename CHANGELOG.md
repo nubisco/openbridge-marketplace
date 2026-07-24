@@ -1,3 +1,10 @@
+## [1.11.1](https://github.com/nubisco/openbridge-marketplace/compare/v1.11.0...v1.11.1) (2026-07-24)
+
+
+### Bug Fixes
+
+* **favicon:** cache-bust favicon and manifest assets by content hash ([e80b418](https://github.com/nubisco/openbridge-marketplace/commit/e80b4181828310bf9bcfca24a51b73566c93a931))
+
 # [1.11.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.10.0...v1.11.0) (2026-07-20)
 
 
