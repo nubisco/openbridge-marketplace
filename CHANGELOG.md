@@ -1,3 +1,11 @@
+## [1.11.2](https://github.com/nubisco/openbridge-marketplace/compare/v1.11.1...v1.11.2) (2026-08-14)
+
+
+### Bug Fixes
+
+* **auth:** stop the platform SSO token persisting in the callback URL ([b3a5915](https://github.com/nubisco/openbridge-marketplace/commit/b3a5915446de9f7276b9fbfbf00780e9f9778e9b))
+* **auth:** stop the platform SSO token persisting in the callback URL ([01c4451](https://github.com/nubisco/openbridge-marketplace/commit/01c44518fe2b370ae3a476e6ebdc5de424c1fc50))
+
 ## [1.11.1](https://github.com/nubisco/openbridge-marketplace/compare/v1.11.0...v1.11.1) (2026-07-24)
 
 
