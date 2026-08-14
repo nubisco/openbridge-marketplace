@@ -5,6 +5,7 @@ import { serveStatic } from 'hono/bun'
 import { sql, initDb } from './db'
 import { crawl, syncSinglePlugin } from './crawler'
 import { verifyPlatformToken, rateLimit } from './auth'
+import { redactQueryCredentials } from './log'
 import type {
   PluginListResponse,
   PluginDetailResponse,
@@ -24,7 +25,12 @@ const RANKING_WEIGHTS = {
   freshness: 0.2,
 } as const
 
-app.use('*', logger())
+// The SSO callback arrives as /auth/callback?token=<jwt>, so the request line
+// is redacted before it is written. See server/log.ts.
+app.use(
+  '*',
+  logger((message, ...rest) => console.log(redactQueryCredentials(message), ...rest)),
+)
 app.use('/api/*', cors())
 
 // Always return JSON for unhandled errors so the client can parse them

@@ -15,6 +15,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { takePlatformCallbackToken } from '@/auth/platformCallback'
 
 const route = useRoute()
 const router = useRouter()
@@ -70,7 +71,10 @@ function goHome() {
 
 onMounted(async () => {
   const stored = readStoredState()
-  const token = typeof route.query.token === 'string' ? route.query.token : ''
+  // The token never reaches route.query: it is taken off the URL at module load
+  // (see @/auth/platformCallback) so it cannot leak into history, the Referer
+  // header, access logs or analytics.
+  const token = takePlatformCallbackToken()
   const state = typeof route.query.state === 'string' ? route.query.state : ''
   const error = typeof route.query.error === 'string' ? route.query.error : ''
 

@@ -1,3 +1,6 @@
+// Must stay first: strips the platform SSO token from the URL before the
+// router snapshots the location and before the analytics tracker is loaded.
+import './auth/platformCallback'
 import { createApp } from 'vue'
 import NubiscoUI from '@nubisco/ui'
 import App from './App.vue'
