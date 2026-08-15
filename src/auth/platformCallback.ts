@@ -29,8 +29,29 @@ const CREDENTIAL_PARAMS = ['token', 'access_token', 'id_token', 'refresh_token',
  */
 export function stripCredentialParams(href: string): { token: string; url: string } {
   const parsed = new URL(href)
-  const token = parsed.searchParams.get('token') ?? ''
-  for (const param of CREDENTIAL_PARAMS) parsed.searchParams.delete(param)
+
+  // The platform can now deliver the token in the fragment instead, opt-in per
+  // app via platform_apps.token_delivery. A fragment is never sent to a server,
+  // so it closes what this module cannot reach on its own: the platform's 302
+  // Location header, the follow-up request line, and every proxy and access log
+  // between them.
+  //
+  // Both shapes are read so this can ship before the flag is flipped and keep
+  // working if it is flipped back. The fragment wins when both are present.
+  const fragment = new URLSearchParams(parsed.hash.startsWith('#') ? parsed.hash.slice(1) : parsed.hash)
+  const token = fragment.get('token') || (parsed.searchParams.get('token') ?? '')
+
+  for (const param of CREDENTIAL_PARAMS) {
+    parsed.searchParams.delete(param)
+    fragment.delete(param)
+  }
+  // Only rewrite the fragment when it actually held parameters, so a plain
+  // anchor such as #installation survives untouched.
+  if (parsed.hash.includes('=')) {
+    const rest = fragment.toString()
+    parsed.hash = rest ? `#${rest}` : ''
+  }
+
   return { token, url: `${parsed.pathname}${parsed.search}${parsed.hash}` }
 }
 
