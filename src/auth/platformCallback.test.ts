@@ -93,3 +93,40 @@ describe('capturePlatformCallbackToken', () => {
     expect(takePlatformCallbackToken()).toBe('')
   })
 })
+
+describe('fragment delivery', () => {
+  const base = 'https://marketplace.openbridge.nubisco.io/auth/callback'
+
+  it('captures a token delivered in the fragment', () => {
+    const { token, url } = stripCredentialParams(`${base}#token=jwt_frag&state=abc`)
+
+    expect(token).toBe('jwt_frag')
+    // Moving the credential from query to fragment is only a fix if we then
+    // remove it from the fragment too.
+    expect(url).not.toContain('jwt_frag')
+    expect(url).toContain('state=abc')
+  })
+
+  it('leaves a plain anchor untouched', () => {
+    const { token, url } = stripCredentialParams('https://marketplace.openbridge.nubisco.io/plugins#installation')
+
+    expect(token).toBe('')
+    expect(url).toBe('/plugins#installation')
+  })
+
+  it('prefers the fragment when both carry a token', () => {
+    const { token, url } = stripCredentialParams(`${base}?token=jwt_query#token=jwt_frag`)
+
+    expect(token).toBe('jwt_frag')
+    expect(url).not.toContain('jwt_query')
+    expect(url).not.toContain('jwt_frag')
+  })
+
+  it('still handles the query-only shape', () => {
+    // The flag defaults to query, so this path stays live until it is flipped.
+    const { token, url } = stripCredentialParams(`${base}?token=jwt_query&state=abc`)
+
+    expect(token).toBe('jwt_query')
+    expect(url).not.toContain('jwt_query')
+  })
+})
