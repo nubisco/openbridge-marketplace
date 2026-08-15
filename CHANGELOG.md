@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.11.2...v1.12.0) (2026-08-15)
+
+
+### Features
+
+* **auth:** accept the SSO token from the URL fragment ([df52773](https://github.com/nubisco/openbridge-marketplace/commit/df52773f9ef442e886039cffb28133da2d9ec64b)), closes [#installation](https://github.com/nubisco/openbridge-marketplace/issues/installation)
+
 ## [1.11.2](https://github.com/nubisco/openbridge-marketplace/compare/v1.11.1...v1.11.2) (2026-08-14)
 
 
