@@ -1,3 +1,10 @@
+## [1.12.1](https://github.com/nubisco/openbridge-marketplace/compare/v1.12.0...v1.12.1) (2026-09-01)
+
+
+### Bug Fixes
+
+* **deps:** upgrade @nubisco/ui to 2.5.0 ([afa81d2](https://github.com/nubisco/openbridge-marketplace/commit/afa81d2cbb9b67b511f5a49d4dea45a87675e36f))
+
 # [1.12.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.11.2...v1.12.0) (2026-08-15)
 
 
