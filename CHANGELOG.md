@@ -1,3 +1,10 @@
+## [1.12.2](https://github.com/nubisco/openbridge-marketplace/compare/v1.12.1...v1.12.2) (2026-09-08)
+
+
+### Bug Fixes
+
+* **deps:** upgrade @nubisco/ui to 4.1.2 and clear resolved issue backlog ([10acc76](https://github.com/nubisco/openbridge-marketplace/commit/10acc7671dd2b2a70257af675cbfb34cdf357a8c)), closes [#1](https://github.com/nubisco/openbridge-marketplace/issues/1) [#2](https://github.com/nubisco/openbridge-marketplace/issues/2) [#3](https://github.com/nubisco/openbridge-marketplace/issues/3) [#4](https://github.com/nubisco/openbridge-marketplace/issues/4) [#5](https://github.com/nubisco/openbridge-marketplace/issues/5) [#8](https://github.com/nubisco/openbridge-marketplace/issues/8) [#9](https://github.com/nubisco/openbridge-marketplace/issues/9) [#10](https://github.com/nubisco/openbridge-marketplace/issues/10) [#11](https://github.com/nubisco/openbridge-marketplace/issues/11) [#13](https://github.com/nubisco/openbridge-marketplace/issues/13) [#16](https://github.com/nubisco/openbridge-marketplace/issues/16)
+
 ## [1.12.1](https://github.com/nubisco/openbridge-marketplace/compare/v1.12.0...v1.12.1) (2026-09-01)
 
 
