@@ -79,12 +79,15 @@ openbridge-marketplace/
 | ------ | --------------------------- | ------------------------------------------- |
 | `GET`  | `/api/auth/platform/config` | Returns runtime SSO config for the frontend |
 
-### Reviews (auth required)
+### Reviews and Q&A (auth required unless noted)
 
-| Method | Path                         | Description                              |
-| ------ | ---------------------------- | ---------------------------------------- |
-| `POST` | `/api/plugins/:name/reviews` | Submit review. Body: `{ rating, body? }` |
-| `POST` | `/api/reviews/:id/helpful`   | Mark review as helpful                   |
+| Method | Path                           | Description                                                      |
+| ------ | ------------------------------ | ---------------------------------------------------------------- |
+| `POST` | `/api/plugins/:name/reviews`   | Submit review. Body: `{ vote: 1 \| -1, body? }` (max 2000 chars) |
+| `POST` | `/api/reviews/:id/replies`     | Reply to a review. Body: `{ body }` (max 1000 chars)             |
+| `POST` | `/api/plugins/:name/questions` | Ask a question. Body: `{ body }` (max 1000 chars)                |
+| `POST` | `/api/questions/:id/answers`   | Answer a question. Body: `{ body }` (max 2000 chars)             |
+| `POST` | `/api/reviews/:id/helpful`     | Mark review as helpful (no body, no auth)                        |
 
 ### Admin (auth required, admin role)
 
@@ -151,7 +154,6 @@ Running openbridge instances can replace their npm registry calls with:
 GET https://marketplace.openbridge.nubisco.io/api/plugins?sort=best&limit=250
 ```
 
-The response includes `rating_avg` and `rating_count` per plugin, giving users community signal directly in the openbridge UI.
 The response includes download, review, and freshness signals, along with the aggregated thumb-up/thumb-down counts used by the marketplace ranking model.
 
 OpenBridge may choose to support custom marketplace endpoints in the future, but the official default marketplace service is the Nubisco-operated deployment under the official marketplace domain.

@@ -1435,41 +1435,6 @@ onMounted(async () => {
   margin-top: 0.25rem;
 }
 
-// ── OTP modal ─────────────────────────────────────────────────────────────────
-
-.otp-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.otp-modal {
-  background: var(--nb-c-bg);
-  border: 1px solid var(--nb-c-component-plain-border);
-  border-radius: 12px;
-  padding: 1.75rem;
-  width: min(380px, 90vw);
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-
-  h3 {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin: 0;
-  }
-}
-
-.otp-modal__hint {
-  font-size: 0.8375rem;
-  color: var(--nb-c-text-subtle);
-  margin: 0;
-}
-
 // ── Review list ───────────────────────────────────────────────────────────────
 
 .review-list {

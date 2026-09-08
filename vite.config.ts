@@ -3,6 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import { nubiscoUI } from '@nubisco/ui/vite'
 
 const MANIFEST_PATH = '/site.webmanifest'
 
@@ -90,7 +91,11 @@ function publicAssetCacheBust(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [vue(), publicAssetCacheBust()],
+  // nubiscoUI() resolves <Nb*> tags to per-component imports and links the
+  // matching per-component stylesheets. Required from @nubisco/ui 4.0.0: the
+  // app plugin no longer registers components, so without this the tags
+  // resolve to nothing at runtime while the build stays green.
+  plugins: [vue(), ...nubiscoUI(), publicAssetCacheBust()],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },

@@ -34,13 +34,9 @@ const schema = /* sql */ `
   ALTER TABLE plugins ADD COLUMN IF NOT EXISTS github_stars INTEGER;
   ALTER TABLE plugins ADD COLUMN IF NOT EXISTS github_sponsors_url TEXT;
 
-  -- OTP codes: hashed_code prevents plaintext storage; attempts tracks brute force
-  CREATE TABLE IF NOT EXISTS otp_codes (
-    email_hash    TEXT PRIMARY KEY,
-    hashed_code   TEXT NOT NULL,
-    expires_at    TIMESTAMPTZ NOT NULL,
-    attempts      INTEGER NOT NULL DEFAULT 0
-  );
+  -- Local OTP auth was replaced by Nubisco Platform SSO; the table only ever
+  -- held codes with a 5-minute TTL, so there is nothing to preserve.
+  DROP TABLE IF EXISTS otp_codes;
 
   -- Reviews: thumbs up (1) or thumbs down (-1) with an optional comment
   CREATE TABLE IF NOT EXISTS reviews (

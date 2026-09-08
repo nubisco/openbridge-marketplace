@@ -2,12 +2,15 @@
 // router snapshots the location and before the analytics tracker is loaded.
 import './auth/platformCallback'
 import { createApp } from 'vue'
+// Installs directives, the command palette and app-level config. Since
+// @nubisco/ui 4.0.0 it no longer registers components; the nubiscoUI() Vite
+// plugin does that, and imports each component's stylesheet, which is why
+// there is no longer a global ui.css import here.
 import NubiscoUI from '@nubisco/ui'
 import App from './App.vue'
 import { router } from './router'
 import { initAnalytics } from './composables/useAnalytics'
 
-import '@nubisco/ui/dist/ui.css'
 import './styles/index.scss'
 
 initAnalytics()
