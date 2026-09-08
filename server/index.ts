@@ -132,7 +132,6 @@ app.get('/api/plugins', async (c) => {
         weekly_downloads: number
         github_stars: number | null
         github_sponsors_url: string | null
-        verified: boolean
         deprecated: boolean
         last_published_at: string
         thumb_up: number
@@ -148,7 +147,7 @@ app.get('/api/plugins', async (c) => {
           p.name, p.display_name, p.description, p.version, p.author,
           p.homepage, p.repository_url, p.npm_url,
           p.weekly_downloads, p.github_stars, p.github_sponsors_url,
-          p.verified, p.deprecated, p.last_published_at,
+          p.deprecated, p.last_published_at,
           COUNT(CASE WHEN r.vote = 1 THEN 1 END)::int AS thumb_up,
           COUNT(CASE WHEN r.vote = -1 THEN 1 END)::int AS thumb_down,
           COUNT(r.id)::int AS review_count,
@@ -202,7 +201,7 @@ app.get('/api/plugins', async (c) => {
         name, display_name, description, version, author,
         homepage, repository_url, npm_url,
         weekly_downloads, github_stars, github_sponsors_url,
-        verified, deprecated, last_published_at,
+        deprecated, last_published_at,
         thumb_up, thumb_down, review_score, download_score, freshness_score, ranking_score
       FROM ranked
       ORDER BY ${orderBy}

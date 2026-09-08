@@ -52,7 +52,10 @@
     <section class="transparency-section">
       <h2>Current limits</h2>
       <ul>
-        <li>The primary ranking model does not currently use the <code>verified</code> field.</li>
+        <li>
+          The marketplace does not verify, endorse, or curate plugins. Ranking is computed from observed signals only,
+          and no plugin is promoted by editorial decision.
+        </li>
         <li>The marketplace does not currently personalize ranking per signed-in user.</li>
         <li>The marketplace does not host plugin code itself. Installation and package delivery come from npm.</li>
         <li>A highly ranked plugin is not guaranteed to be safe, correct, or suitable for a specific environment.</li>

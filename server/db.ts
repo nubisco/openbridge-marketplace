@@ -23,7 +23,6 @@ const schema = /* sql */ `
     readme              TEXT,
     weekly_downloads    INTEGER NOT NULL DEFAULT 0,
     total_downloads     INTEGER NOT NULL DEFAULT 0,
-    verified            BOOLEAN NOT NULL DEFAULT FALSE,
     deprecated          BOOLEAN NOT NULL DEFAULT FALSE,
     last_published_at   TIMESTAMPTZ,
     synced_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -33,6 +32,10 @@ const schema = /* sql */ `
   ALTER TABLE plugins ADD COLUMN IF NOT EXISTS readme TEXT;
   ALTER TABLE plugins ADD COLUMN IF NOT EXISTS github_stars INTEGER;
   ALTER TABLE plugins ADD COLUMN IF NOT EXISTS github_sponsors_url TEXT;
+
+  -- The marketplace does not verify or endorse plugins, so this flag had no
+  -- writer and no reader: it was FALSE on every row.
+  ALTER TABLE plugins DROP COLUMN IF EXISTS verified;
 
   -- Local OTP auth was replaced by Nubisco Platform SSO; the table only ever
   -- held codes with a 5-minute TTL, so there is nothing to preserve.

@@ -22,7 +22,6 @@ export interface Plugin {
   total_downloads: number
   github_stars: number | null
   github_sponsors_url: string | null
-  verified: boolean // manually verified by marketplace admins
   deprecated: boolean
   last_published_at: string // ISO timestamp
   synced_at: string // when we last fetched from npm
@@ -48,7 +47,6 @@ export type PluginSummary = Pick<
   | 'weekly_downloads'
   | 'github_stars'
   | 'github_sponsors_url'
-  | 'verified'
   | 'deprecated'
   | 'last_published_at'
   | 'thumb_up'
