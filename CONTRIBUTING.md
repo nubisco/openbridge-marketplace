@@ -15,12 +15,12 @@ bun install
 ## Development Commands
 
 ```bash
-pnpm run lint
-pnpm run format:check
-pnpm run typecheck
-pnpm run test
-pnpm run build
-pnpm run quality:check
+bun run lint
+bun run format:check
+bun run typecheck
+bun run test
+bun run build
+bun run quality:check
 ```
 
 Notes:
@@ -51,7 +51,7 @@ By opening a pull request, you must explicitly confirm you agree to the CLA in t
 
 1. Fork and branch from `master`.
 2. Make focused changes and keep commits clear.
-3. Run `pnpm run quality:check`.
+3. Run `bun run quality:check`.
 4. Update docs when behavior, policy, or public APIs change.
 5. Open a pull request and complete the template, including explicit CLA confirmation.
 6. Address review feedback without expanding the original scope unnecessarily.
@@ -84,7 +84,7 @@ If you need a generic UI primitive, prefer adding it to `@nubisco/ui` first rath
 Before committing or pushing, run:
 
 ```sh
-pnpm run quality:check
+bun run quality:check
 ```
 
-The local Git hooks are expected to enforce the same gate automatically. Commits must not proceed unless tests, linting, formatting, and type checks all pass.
+The local Git hooks enforce the same gate automatically. Commits must not proceed unless tests, linting, formatting, and type checks all pass, and a push also runs `bun run build`, because code can pass all four and still fail to build.

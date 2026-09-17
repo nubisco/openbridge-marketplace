@@ -25,11 +25,11 @@ Required confirmation statement (do not remove):
 
 List commands you ran and results:
 
-- [ ] `pnpm run lint`
-- [ ] `pnpm run format:check`
-- [ ] `pnpm run typecheck`
-- [ ] `pnpm run test`
-- [ ] `pnpm run build`
+- [ ] `bun run lint`
+- [ ] `bun run format:check`
+- [ ] `bun run typecheck`
+- [ ] `bun run test`
+- [ ] `bun run build`
 
 ## Documentation
 

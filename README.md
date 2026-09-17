@@ -163,7 +163,7 @@ OpenBridge may choose to support custom marketplace endpoints in the future, but
 Before committing or pushing, run:
 
 ```sh
-pnpm run quality:check
+bun run quality:check
 ```
 
-The local hooks are expected to enforce the same rule automatically. Tests, linting, formatting, and type checks must all pass before a commit is considered valid.
+The local hooks enforce the same rule automatically. Tests, linting, formatting, and type checks must all pass before a commit is considered valid, and a push also runs `bun run build`.
