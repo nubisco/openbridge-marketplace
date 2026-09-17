@@ -1,3 +1,10 @@
+## [1.12.5](https://github.com/nubisco/openbridge-marketplace/compare/v1.12.4...v1.12.5) (2026-09-17)
+
+
+### Bug Fixes
+
+* **ui:** type-check @nubisco/ui components and correct invalid variants ([16f0786](https://github.com/nubisco/openbridge-marketplace/commit/16f0786cdc25ef5491153e0880ad8d862e0249b1))
+
 ## [1.12.4](https://github.com/nubisco/openbridge-marketplace/compare/v1.12.3...v1.12.4) (2026-09-17)
 
 
