@@ -1,3 +1,10 @@
+## [1.12.4](https://github.com/nubisco/openbridge-marketplace/compare/v1.12.3...v1.12.4) (2026-09-17)
+
+
+### Bug Fixes
+
+* run the git hooks with bun, the repo's package manager ([8e468d7](https://github.com/nubisco/openbridge-marketplace/commit/8e468d7fb1e0fede915b516c495098e9f68d4f2a))
+
 ## [1.12.3](https://github.com/nubisco/openbridge-marketplace/compare/v1.12.2...v1.12.3) (2026-09-08)
 
 
