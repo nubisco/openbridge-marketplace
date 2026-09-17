@@ -21,7 +21,7 @@
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged && bun run quality:check",
-    "pre-push": "bun run quality:check"
+    "pre-push": "bun run quality:check && bun run build"
   },
   "lint-staged": {
     "src/**/*.{ts,vue}": [
