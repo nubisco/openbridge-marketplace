@@ -121,7 +121,7 @@
         <div v-if="keywords.length" class="sidebar-section">
           <h3 class="sidebar-heading">Tags</h3>
           <div class="keyword-list">
-            <NbBadge v-for="kw in keywords" :key="kw" variant="gray" size="sm">{{ kw }}</NbBadge>
+            <NbBadge v-for="kw in keywords" :key="kw" variant="grey" size="sm">{{ kw }}</NbBadge>
           </div>
         </div>
 
@@ -172,7 +172,7 @@
         </NbButton>
       </div>
 
-      <NbMessage v-if="!authed" variant="info" class="auth-inline-message">
+      <NbMessage v-if="!authed" variant="helper" class="auth-inline-message">
         Reviews and Q&amp;A use your Nubisco Platform identity. Sign in to participate.
       </NbMessage>
       <NbMessage v-if="platformAuthError" variant="error" class="auth-inline-message">
@@ -278,7 +278,7 @@
         </div>
       </div>
 
-      <NbMessage v-if="!authed" variant="info" class="auth-inline-message">
+      <NbMessage v-if="!authed" variant="helper" class="auth-inline-message">
         Sign in with Nubisco Platform to post marketplace reviews.
       </NbMessage>
       <NbMessage v-if="platformAuthError" variant="error" class="auth-inline-message">
