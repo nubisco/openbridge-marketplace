@@ -1,3 +1,10 @@
+## [1.12.6](https://github.com/nubisco/openbridge-marketplace/compare/v1.12.5...v1.12.6) (2026-09-23)
+
+
+### Bug Fixes
+
+* **seo:** answer 404 for addresses that are not pages ([9e5ea29](https://github.com/nubisco/openbridge-marketplace/commit/9e5ea294f74957b7578e891818e35e4373f7997a))
+
 ## [1.12.5](https://github.com/nubisco/openbridge-marketplace/compare/v1.12.4...v1.12.5) (2026-09-17)
 
 
