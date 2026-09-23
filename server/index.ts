@@ -495,6 +495,56 @@ app.get('/api/stats', async (c) => {
 // ── Static / SPA ──────────────────────────────────────────────────────────────
 
 app.use('*', serveStatic({ root: './dist' }))
+
+/**
+ * The paths this SPA actually has a page for, mirroring src/router/index.ts.
+ * Anything else is not a page here, whatever it looks like.
+ */
+const PAGE_ROUTES = [/^\/$/, /^\/auth\/callback\/?$/, /^\/privacy\/?$/, /^\/terms\/?$/, /^\/transparency\/?$/]
+const PLUGIN_ROUTE = /^\/plugins\/(.+?)\/?$/
+
+/**
+ * The SPA fallback, with an honest status code.
+ *
+ * This used to answer every address with index.html under a 200. The client
+ * router then rendered "not found" on screen, but nothing in the response said
+ * so, and the plugin route is `plugins/:name(.*)`, which greedily swallows
+ * anything after /plugins/. Google crawled the file paths that appear in plugin
+ * READMEs and got a 200 every time: /plugins/README.md, /plugins/LICENSE,
+ * /plugins/package.json, even /plugins/apple.com/. Search Console has 15 of
+ * these filed as Soft 404, and they are the marketplace's entire share of the
+ * site's unindexed pages.
+ *
+ * A plugin path is checked against the database rather than pattern-matched,
+ * because "is this a real plugin" is not a thing a regex can know. The body is
+ * still the SPA either way, so a visitor gets the app and its own not-found
+ * screen. Only the status changes, which is the part crawlers read.
+ */
+app.get('*', async (c, next) => {
+  const path = new URL(c.req.url).pathname
+
+  let found = PAGE_ROUTES.some((re) => re.test(path))
+
+  if (!found) {
+    const match = PLUGIN_ROUTE.exec(path)
+    if (match) {
+      // A name that cannot be a plugin (a file extension, a path segment from a
+      // README) never reaches the database.
+      const name = decodeURIComponent(match[1])
+      const [row] = await sql`SELECT 1 FROM plugins WHERE name = ${name} LIMIT 1`
+      found = Boolean(row)
+    }
+  }
+
+  if (found) return next()
+
+  // Same shell, truthful status. serveStatic cannot set one, so the file is read
+  // directly; a missing build is a 404 with no body rather than a crash.
+  const shell = Bun.file('./dist/index.html')
+  if (!(await shell.exists())) return c.text('Not found', 404)
+  return c.html(await shell.text(), 404)
+})
+
 app.get('*', serveStatic({ path: './dist/index.html' }))
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
