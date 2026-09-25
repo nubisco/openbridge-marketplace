@@ -1,3 +1,10 @@
+# [1.13.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.12.6...v1.13.0) (2026-09-25)
+
+
+### Features
+
+* **theme:** take the accent from the home category ([2171399](https://github.com/nubisco/openbridge-marketplace/commit/2171399b624cb4f558d7890c54c231953cd8fa78)), closes [#086f9e](https://github.com/nubisco/openbridge-marketplace/issues/086f9e) [#5ec1e8](https://github.com/nubisco/openbridge-marketplace/issues/5ec1e8) [#7c3aed](https://github.com/nubisco/openbridge-marketplace/issues/7c3aed)
+
 ## [1.12.6](https://github.com/nubisco/openbridge-marketplace/compare/v1.12.5...v1.12.6) (2026-09-23)
 
 
