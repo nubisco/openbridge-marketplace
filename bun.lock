@@ -5,7 +5,7 @@
     "": {
       "name": "openbridge-marketplace",
       "dependencies": {
-        "@nubisco/ui": "^4.1.2",
+        "@nubisco/ui": "^5.9.1",
         "dompurify": "^3.3.3",
         "hono": "^4.12.12",
         "jose": "^6.2.2",
@@ -115,7 +115,7 @@
 
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.1.3", "", { "dependencies": { "@tybys/wasm-util": "^0.10.1" }, "peerDependencies": { "@emnapi/core": "^1.7.1", "@emnapi/runtime": "^1.7.1" } }, "sha512-xK9sGVbJWYb08+mTJt3/YV24WxvxpXcXtP6B172paPZ+Ts69Re9dAr7lKwJoeIx8OoeuimEiRZ7umkiUVClmmQ=="],
 
-    "@nubisco/ui": ["@nubisco/ui@4.1.2", "", { "dependencies": { "magic-string": "^1.2.3", "unplugin-vue-components": "^32.1.0" }, "peerDependencies": { "pixi.js": "^8.0.0", "unplugin-fonts": ">=1.4.0", "vue": "^3.5.30", "vue-i18n": "^11.3.0" }, "optionalPeers": ["unplugin-fonts"] }, "sha512-7bco4RENAWPyrfUIfuTFEGO0rqiMMH0AIB05CsKyGD5x6Hp4wN9f007Ua3nbgVIAB2X/y1mxEqp+NM+i6X/oww=="],
+    "@nubisco/ui": ["@nubisco/ui@5.9.1", "", { "dependencies": { "magic-string": "^1.2.3", "unplugin-vue-components": "^32.1.0" }, "peerDependencies": { "pixi.js": "^8.0.0", "unplugin-fonts": ">=1.4.0", "vue": "^3.5.30", "vue-i18n": "^11.3.0" }, "optionalPeers": ["unplugin-fonts"] }, "sha512-HGyEq1kxsAhWGy5c8JGADyclAP6448wM4hKP/pFYTDSXYB5CTbesr/f3u/DKSuTr7ADgl5BvHWCAxzNz8mnBuw=="],
 
     "@octokit/auth-token": ["@octokit/auth-token@6.0.0", "", {}, "sha512-P4YJBPdPSpWTQ1NU4XYdvHvXJJDxM6YwpS0FZHRgP7YFkdVxsWcpWGy/NVqlAA7PcPCnMacXlRm1y2PFZRWL/w=="],
 
