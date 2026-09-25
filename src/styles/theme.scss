@@ -1,0 +1,12 @@
+// The marketplace's accent, resolved from its audience category.
+//
+// openbridge-marketplace is a home product: it is the directory for plugins
+// that run in someone's house. The category, not the hex, is what is declared
+// here. @nubisco/ui holds the four category values and knows nothing about
+// this app, so a change to the home accent arrives through a version bump
+// rather than an edit. See AGENTS.md, "Audience categories, and which product
+// is in which".
+
+@use '@nubisco/ui/styles/theme-api' as nb;
+
+@include nb.app-theme('openbridge-marketplace', $category: 'home');
