@@ -39,6 +39,10 @@
     <div v-else class="plugin-grid">
       <RouterLink v-for="p in plugins" :key="p.name" :to="`/plugins/${p.name}`" class="plugin-card">
         <div class="plugin-card__head">
+          <span class="plugin-card__avatar">
+            <img v-if="avatarUrl(p)" :src="avatarUrl(p)!" :alt="''" loading="lazy" @error="onAvatarError" />
+            <NbIcon v-else name="puzzle-piece" :size="14" />
+          </span>
           <span class="plugin-card__name">{{ p.name }}</span>
           <NbBadge v-if="p.name.startsWith('openbridge-')" variant="blue" size="sm">OpenBridge</NbBadge>
         </div>
@@ -74,6 +78,24 @@
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { RouterLink, useRouter, useRoute } from 'vue-router'
 import type { PluginSummary } from '../../shared/types'
+
+/**
+ * A plugin's icon is its GitHub owner's avatar, derived from the repository
+ * URL. Same rule OpenBridge's own plugin list uses, so a plugin looks the same
+ * in both places, and it needs no new field: the crawler already stores the
+ * repository. Packages published without a repository fall back to the generic
+ * mark rather than a broken image.
+ */
+function avatarUrl(p: PluginSummary): string | null {
+  const repo = p.repository_url ?? ''
+  const m = repo.replace(/^git\+/, '').match(/github\.com[/:]([^/]+)/)
+  return m ? `https://github.com/${m[1]}.png?size=48` : null
+}
+
+/** GitHub 404s an avatar for a deleted org, so drop the image and keep the layout. */
+function onAvatarError(event: Event) {
+  ;(event.target as HTMLImageElement).style.display = 'none'
+}
 
 const router = useRouter()
 const route = useRoute()
@@ -265,6 +287,25 @@ fetchStats()
   &:hover {
     border-color: #7c3aed;
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.08);
+  }
+}
+
+.plugin-card__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--nb-c-layer-1, rgba(127, 127, 127, 0.12));
+  color: var(--nb-c-text-subtle);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 }
 

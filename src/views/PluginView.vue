@@ -5,7 +5,8 @@
     <!-- ── Header ──────────────────────────────────────────────────────────── -->
     <div class="plugin-header">
       <div class="plugin-header__avatar" :class="{ 'plugin-header__avatar--ob': isOpenBridge }">
-        <NbIcon :name="isOpenBridge ? 'diamond' : 'puzzle-piece'" :size="28" />
+        <img v-if="avatarUrl" :src="avatarUrl" alt="" loading="lazy" @error="onAvatarError" />
+        <NbIcon v-else :name="isOpenBridge ? 'diamond' : 'puzzle-piece'" :size="28" />
       </div>
       <div class="plugin-header__info">
         <div class="plugin-header__title-row">
@@ -441,6 +442,16 @@ const replyError = ref('')
 
 const copied = ref(false)
 
+const avatarUrl = computed(() => {
+  const repo = plugin.value?.repository_url ?? ''
+  const m = repo.replace(/^git\+/, '').match(/github\.com[/:]([^/]+)/)
+  return m ? `https://github.com/${m[1]}.png?size=96` : null
+})
+
+function onAvatarError(event: Event) {
+  ;(event.target as HTMLImageElement).style.display = 'none'
+}
+
 const isOpenBridge = computed(() => plugin.value?.name.startsWith('openbridge-') ?? false)
 
 const keywords = computed<string[]>(() => {
@@ -774,6 +785,13 @@ onMounted(async () => {
   &--ob {
     background: linear-gradient(135deg, #7c3aed, #4f46e5);
     color: #fff;
+  }
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 }
 
