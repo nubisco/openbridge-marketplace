@@ -10,6 +10,7 @@
  */
 import { sql } from './db'
 import type { NpmSearchResult, NpmSearchObject, NpmPackageDetail } from '../shared/types'
+import { displayNameFor } from './displayName'
 
 const NPM_SEARCH = 'https://registry.npmjs.org/-/v1/search'
 const NPM_REGISTRY = 'https://registry.npmjs.org'
@@ -173,7 +174,7 @@ export async function syncSinglePlugin(name: string): Promise<boolean> {
       deprecated, last_published_at, synced_at
     ) VALUES (
       ${name},
-      ${name.replace(/^(@[\w-]+\/)?(homebridge|openbridge)-/, '').replace(/-/g, ' ')},
+      ${displayNameFor(name, manifest)},
       ${detail.description ?? null},
       ${latest},
       ${parseAuthor(detail.author ?? manifest?.author ?? null)},
@@ -315,7 +316,7 @@ async function doCrawl(onProgress?: (msg: string) => void) {
         deprecated, last_published_at, synced_at
       ) VALUES (
         ${pkg.name},
-        ${pkg.name.replace(/^(@[\w-]+\/)?(homebridge|openbridge)-/, '').replace(/-/g, ' ')},
+        ${displayNameFor(pkg.name, manifest)},
         ${pkg.description ?? null},
         ${latest},
         ${parseAuthor(detail?.author ?? manifest?.author ?? null)},

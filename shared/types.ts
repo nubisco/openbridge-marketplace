@@ -175,4 +175,6 @@ export interface NpmVersionManifest {
   repository?: { url: string } | string
   author?: { name: string; email?: string } | string
   engines?: Record<string, string>
+  /** OpenBridge plugins declare how they want to be named and which platform they register. */
+  openbridge?: { platform?: string; displayName?: string }
 }
