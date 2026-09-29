@@ -1,3 +1,15 @@
+# [1.14.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.13.0...v1.14.0) (2026-09-29)
+
+
+### Bug Fixes
+
+* **release:** use GH_TOKEN so the release can push past branch protection ([63c8423](https://github.com/nubisco/openbridge-marketplace/commit/63c8423607edae23753fe3826d5a4e542ce4c65f))
+
+
+### Features
+
+* **ui:** show each plugin's icon on cards and on the detail page ([a17e117](https://github.com/nubisco/openbridge-marketplace/commit/a17e1172d9a92b860c356c1ddcc390193d9fdf85))
+
 # [1.13.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.12.6...v1.13.0) (2026-09-25)
 
 
