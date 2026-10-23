@@ -1,3 +1,10 @@
+## [1.14.1](https://github.com/nubisco/openbridge-marketplace/compare/v1.14.0...v1.14.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* **deps:** hono 4.13.13, dompurify 3.4.17 and marked 18.1.1 ([c380022](https://github.com/nubisco/openbridge-marketplace/commit/c380022cec9eff6c00857c1161f63aab62b2c1ba))
+
 # [1.14.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.13.0...v1.14.0) (2026-09-29)
 
 
