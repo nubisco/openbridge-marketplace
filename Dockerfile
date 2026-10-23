@@ -1,8 +1,8 @@
-FROM oven/bun:1 AS base
+FROM oven/bun:1.4.4 AS base
 WORKDIR /app
 
 # Install deps
-COPY package.json bun.lockb* ./
+COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
 # Build frontend (VITE_ANALYTICS_URL is baked in at build time)
@@ -14,7 +14,7 @@ RUN bun run build
 # Prune to production deps
 RUN bun install --frozen-lockfile --production
 
-FROM oven/bun:1-slim AS runner
+FROM oven/bun:1.4.4-slim AS runner
 WORKDIR /app
 
 COPY --from=base /app/node_modules ./node_modules
