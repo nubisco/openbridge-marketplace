@@ -16,7 +16,9 @@ services:
       retries: 10
 
   marketplace:
-    image: ghcr.io/nubisco/openbridge-marketplace:latest
+    # CI sets OPENBRIDGE_MARKETPLACE_VERSION to the sha- tag it built, so a deploy runs one exact
+    # build. Unset means latest.
+    image: ghcr.io/nubisco/openbridge-marketplace:${OPENBRIDGE_MARKETPLACE_VERSION:-latest}
     pull_policy: always
     container_name: openbridge-marketplace
     restart: unless-stopped

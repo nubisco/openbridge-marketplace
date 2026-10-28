@@ -1,24 +1,58 @@
 name: Deploy
 
+# Builds the multi-arch image after a release on master, pushes it to GHCR, and deploys it to
+# the NAS.
+#
+# The image build runs on GitHub's runners and is the only part that executes repository code.
+# The deploy job runs on a self-hosted runner and checks out nothing: it asks the NAS to deploy
+# the sha- tag of the commit that was built, through a key that can run one deploy script and
+# nothing else. The key and the host alias live on the runner, not in GitHub or in this
+# repository, so nothing here describes how the NAS is set up.
+#
+# There is no manual trigger on purpose: only a merge to master deploys. To build again, re-run
+# the workflow from the Actions tab.
+#
+# The runner group only lets this file run from master, so a pull request or another branch
+# cannot reach the runner.
 on:
   workflow_run:
     workflows: [Release]
     branches: [master]
     types: [completed]
-  workflow_dispatch:
+
+# One at a time, and a newer release waits instead of cancelling a deploy in flight.
+concurrency:
+  group: marketplace-deploy
+  cancel-in-progress: false
 
 jobs:
   docker:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    # A branch called master in a fork must not start this, so the run has to be in this
+    # repository, on master, and the release must have succeeded.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'master' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    outputs:
+      sha: ${{ steps.head.outputs.sha }}
 
     steps:
       - uses: actions/checkout@v7
         with:
           ref: master
+
+      # Release may have pushed a version commit after the one that started this chain, so the
+      # commit to deploy is the one checked out here, not the one in the event.
+      - name: Record the commit being built
+        id: head
+        run: |
+          sha=$(git rev-parse HEAD)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "short=${sha:0:7}" >> "$GITHUB_OUTPUT"
 
       - name: Get version from package.json
         id: pkg
@@ -34,6 +68,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # sha- plus 7 characters is the tag the deploy job pins, so the NAS runs one exact build.
       - name: Build and push
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
@@ -45,7 +80,26 @@ jobs:
           tags: |
             ghcr.io/nubisco/openbridge-marketplace:${{ steps.pkg.outputs.version }}
             ghcr.io/nubisco/openbridge-marketplace:latest
+            ghcr.io/nubisco/openbridge-marketplace:sha-${{ steps.head.outputs.short }}
           cache-from: type=gha
           # ignore-error keeps a GHA cache-export failure (e.g. cache quota
           # exhausted) from failing the job after the image is already pushed.
           cache-to: type=gha,mode=max,ignore-error=true
+
+  nas:
+    name: Deploy to the NAS
+    needs: docker
+    runs-on: [self-hosted, nas-deploy]
+    # The script's worst case is three 4-minute pull attempts, then stop, Build and the
+    # health wait.
+    timeout-minutes: 20
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      # The SSH key and the nas-deploy host alias live on the runner, not in GitHub, so only
+      # a job on this runner can reach the NAS.
+      - name: Deploy
+        env:
+          SHA: ${{ needs.docker.outputs.sha }}
+        run: ssh -o BatchMode=yes nas-deploy "openbridge-marketplace sha-${SHA:0:7}"
