@@ -124,27 +124,22 @@ Vite proxies `/api/*` to the Hono server (configured in `vite.config.ts`).
 
 The CI → Release → Deploy chain runs automatically on every merge to `master`:
 
-1. **CI** — lint, format check, typecheck, build
-2. **Release** — semantic-release bumps `package.json` version, generates CHANGELOG, creates GitHub release
-3. **Deploy** — builds multi-arch Docker image (`linux/amd64`, `linux/arm64`), pushes to `ghcr.io/nubisco/openbridge-marketplace:{version,latest}`, then SSHes to the NAS and runs `docker compose pull && docker compose up -d`
+1. **CI**: lint, format check, typecheck, build
+2. **Release**: semantic-release bumps the `package.json` version, generates the CHANGELOG and creates the GitHub release
+3. **Deploy**: builds the multi-arch Docker image (`linux/amd64`, `linux/arm64`) and pushes it to `ghcr.io/nubisco/openbridge-marketplace` as `{version}`, `latest` and `sha-<commit>`. A separate job then asks the host to run exactly that `sha-` build.
 
-### First-time NAS setup
+Only a merge to `master` deploys. There is no manual trigger, and the deploy job checks out no code from the repository. The credentials it uses live on the machine that runs it, not in this repository or in GitHub.
+
+### Running it yourself
 
 ```bash
-# On the NAS
-mkdir -p /volume1/docker/openbridge-marketplace
-cd /volume1/docker/openbridge-marketplace
+mkdir -p openbridge-marketplace && cd openbridge-marketplace
+# copy docker-compose.yml and .env.example here
 cp .env.example .env   # fill in DATABASE_URL, PLATFORM_ISSUER, PLATFORM_APP_ID, POSTGRES_PASSWORD
 docker compose up -d
 ```
 
-**Required GitHub Actions secrets:**
-
-| Secret        | Description                |
-| ------------- | -------------------------- |
-| `NAS_HOST`    | NAS hostname or IP         |
-| `NAS_USER`    | SSH username               |
-| `NAS_SSH_KEY` | Private key for SSH access |
+The image tag follows `OPENBRIDGE_MARKETPLACE_VERSION` and defaults to `latest`.
 
 ## openbridge integration
 
