@@ -1,38 +1,46 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="OpenBridge Marketplace">
-  <title>OpenBridge Marketplace</title>
-  <defs>
-    <filter id="soft" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="12"/></filter>
-    <filter id="soft2" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="16"/></filter>
-    <linearGradient id="tsheen" x1="0" y1="0" x2="0.7" y2="0.9"><stop offset="0" stop-color="#fff" stop-opacity="0.07"/><stop offset="0.45" stop-color="#fff" stop-opacity="0.02"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
-    <linearGradient id="lg1" gradientUnits="userSpaceOnUse" x1="209" y1="175" x2="303" y2="269"><stop offset="0" stop-color="#ffe9a8"/><stop offset="0.5" stop-color="#f6b53f"/><stop offset="1" stop-color="#c9821f"/></linearGradient>
-    <linearGradient id="lg2" gradientUnits="userSpaceOnUse" x1="209" y1="175" x2="209" y2="243"><stop offset="0" stop-color="#fff" stop-opacity="0.5"/><stop offset="1" stop-color="#fff" stop-opacity="0.0"/></linearGradient>
-    <linearGradient id="lg3" gradientUnits="userSpaceOnUse" x1="0" y1="302" x2="0" y2="414"><stop offset="0" stop-color="#8fb0e8"/><stop offset="0.5" stop-color="#4d74bd"/><stop offset="1" stop-color="#1b2f60"/></linearGradient>
-    <linearGradient id="lg4" gradientUnits="userSpaceOnUse" x1="142" y1="322" x2="186" y2="171"><stop offset="0" stop-color="#ad379f"/><stop offset="0.5" stop-color="#fa474e"/><stop offset="1" stop-color="#fed867"/></linearGradient>
-    <linearGradient id="lg5" gradientUnits="userSpaceOnUse" x1="370" y1="322" x2="326" y2="171"><stop offset="0" stop-color="#69bb63"/><stop offset="0.5" stop-color="#0b82cf"/><stop offset="1" stop-color="#10a9a4"/></linearGradient>
-    <linearGradient id="lg6" gradientUnits="userSpaceOnUse" x1="142" y1="322" x2="186" y2="171"><stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="1" stop-color="#fff" stop-opacity="0.05"/></linearGradient>
-    <linearGradient id="lg7" gradientUnits="userSpaceOnUse" x1="370" y1="322" x2="326" y2="171"><stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="1" stop-color="#fff" stop-opacity="0.05"/></linearGradient>
-    <linearGradient id="lg8" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="512" y2="512"><stop offset="0" stop-color="#14264a"/><stop offset="1" stop-color="#0b1226"/></linearGradient>
-    <radialGradient id="rg9" cx="0.5" cy="0.26" r="0.8"><stop offset="0" stop-color="#2f6fed" stop-opacity="0.22"/><stop offset="1" stop-color="#2f6fed" stop-opacity="0"/></radialGradient>
-  </defs>
-  <rect width="512" height="512" rx="116" fill="url(#lg8)"/><rect width="512" height="512" rx="116" fill="url(#rg9)"/><rect x="209.0" y="187.0" width="94" height="94" rx="20" fill="#000" opacity="0.45" filter="url(#soft)"/>
-<rect x="209.0" y="175.0" width="94" height="94" rx="20" fill="url(#lg1)"/>
-<rect x="209.0" y="214" width="94" height="16" fill="#b8731a" opacity="0.45"/>
-<rect x="248" y="175.0" width="16" height="94" fill="#b8731a" opacity="0.45"/>
-<rect x="209.0" y="175.0" width="94" height="94" rx="20" fill="url(#lg2)"/>
-<rect x="210.0" y="176.0" width="92" height="92" rx="19" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="2"/>
-<g transform="translate(0,14)" fill="#000" opacity="0.36" filter="url(#soft2)"><path d="M 123.8 308.4 L 167.7 165.0 L 204.0 176.1 L 160.2 319.6 Z" fill-rule="evenodd"/><path d="M 351.8 319.6 L 308.0 176.1 L 344.3 165.0 L 388.2 308.4 Z" fill-rule="evenodd"/><path d="M 40 305 L 148 305 L 148 337 L 40 337 Z" fill-rule="evenodd"/><path d="M 364 305 L 472 305 L 472 337 L 364 337 Z" fill-rule="evenodd"/><path d="M 117 330 L 167 330 L 167 414 L 117 414 Z" fill-rule="evenodd"/><path d="M 345 330 L 395 330 L 395 414 L 345 414 Z" fill-rule="evenodd"/></g>
-<path d="M 117 330 L 167 330 L 167 414 L 117 414 Z" fill="url(#lg3)"/>
-<path d="M 345 330 L 395 330 L 395 414 L 345 414 Z" fill="url(#lg3)"/>
-<path d="M 40 305 L 148 305 L 148 337 L 40 337 Z" fill="url(#lg3)"/>
-<path d="M 364 305 L 472 305 L 472 337 L 364 337 Z" fill="url(#lg3)"/>
-<path d="M 40 305 L 148 305 L 148 311 L 40 311 Z" fill="#fff" opacity="0.35"/>
-<path d="M 364 305 L 472 305 L 472 311 L 364 311 Z" fill="#fff" opacity="0.35"/>
-<path d="M 123.8 308.4 L 167.7 165.0 L 204.0 176.1 L 160.2 319.6 Z" fill="url(#lg4)"/>
-<path d="M 351.8 319.6 L 308.0 176.1 L 344.3 165.0 L 388.2 308.4 Z" fill="url(#lg5)"/>
-<path d="M 126.7 306.6 L 170.6 173.1 L 179.1 176.0 L 135.3 309.4 Z" fill="url(#lg6)"/>
-<path d="M 376.7 309.4 L 332.9 176.0 L 341.4 173.1 L 385.3 306.6 Z" fill="url(#lg7)"/>
-<circle cx="142" cy="314" r="17" fill="#22335e"/>
-<circle cx="142" cy="314" r="8" fill="#9fc0f0"/>
-<circle cx="370" cy="314" r="17" fill="#22335e"/>
-<circle cx="370" cy="314" r="8" fill="#9fc0f0"/><rect width="512" height="512" rx="116" fill="url(#tsheen)"/><rect x="1" y="1" width="510" height="510" rx="115" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="2"/>
+<title>OpenBridge Marketplace</title>
+<defs>
+<linearGradient id="ground" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#13224a"/><stop offset="1" stop-color="#080d1b"/></linearGradient>
+<radialGradient id="glow" cx="0.5" cy="0.32" r="0.75"><stop offset="0" stop-color="#2f6fed" stop-opacity="0.26"/><stop offset="1" stop-color="#2f6fed" stop-opacity="0"/></radialGradient>
+<linearGradient id="sheen" x1="0" y1="0" x2="0.7" y2="0.9"><stop offset="0" stop-color="#fff" stop-opacity="0.08"/><stop offset="0.45" stop-color="#fff" stop-opacity="0.02"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<filter id="drop" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14"/></filter>
+<filter id="halo" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="9"/></filter>
+<linearGradient id="leafL" gradientUnits="userSpaceOnUse" x1="176" y1="331" x2="212" y2="196"><stop offset="0" stop-color="#ad379f"/><stop offset="0.5" stop-color="#fa474e"/><stop offset="1" stop-color="#fed867"/></linearGradient>
+<linearGradient id="leafR" gradientUnits="userSpaceOnUse" x1="336" y1="331" x2="300" y2="196"><stop offset="0" stop-color="#69bb63"/><stop offset="0.5" stop-color="#0b82cf"/><stop offset="1" stop-color="#10a9a4"/></linearGradient>
+<linearGradient id="deck" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fb0e8"/><stop offset="1" stop-color="#2b4a8a"/></linearGradient>
+<linearGradient id="pier" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f4f8f"/><stop offset="1" stop-color="#16274f"/></linearGradient>
+
+<linearGradient id="crate" gradientUnits="userSpaceOnUse" x1="224" y1="252" x2="288" y2="316"><stop offset="0" stop-color="#ffe9a8"/><stop offset="0.5" stop-color="#f6b53f"/><stop offset="1" stop-color="#c9821f"/></linearGradient>
+<linearGradient id="crateGloss" gradientUnits="userSpaceOnUse" x1="0" y1="252" x2="0" y2="296.8"><stop offset="0" stop-color="#fff" stop-opacity="0.5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+</defs>
+<rect width="512" height="512" rx="116" fill="url(#ground)"/>
+<rect width="512" height="512" rx="116" fill="url(#glow)"/>
+<g transform="translate(0,16)" opacity="0.45" filter="url(#drop)"><rect x="40" y="312" width="150" height="38" rx="19" fill="#000"/><rect x="322" y="312" width="150" height="38" rx="19" fill="#000"/><line x1="176" y1="331" x2="212" y2="196" stroke="#000" stroke-width="42" stroke-linecap="round"/><line x1="336" y1="331" x2="300" y2="196" stroke="#000" stroke-width="42" stroke-linecap="round"/></g>
+<rect x="154" y="340" width="44" height="86" rx="6" fill="url(#pier)"/>
+<rect x="314" y="340" width="44" height="86" rx="6" fill="url(#pier)"/>
+<rect x="40" y="312" width="150" height="38" rx="19" fill="url(#deck)"/>
+<rect x="52" y="315" width="126" height="5" rx="2.5" fill="#fff" opacity="0.35"/>
+<rect x="322" y="312" width="150" height="38" rx="19" fill="url(#deck)"/>
+<rect x="334" y="315" width="126" height="5" rx="2.5" fill="#fff" opacity="0.35"/>
+<rect x="224" y="264" width="64" height="64" rx="15" fill="#000" opacity="0.45" filter="url(#drop)"/>
+<rect x="224" y="252" width="64" height="64" rx="15" fill="url(#crate)"/>
+<rect x="224" y="278.0" width="64" height="12" fill="#b8731a" opacity="0.45"/>
+<rect x="250.0" y="252" width="12" height="64" fill="#b8731a" opacity="0.45"/>
+<rect x="224" y="252" width="64" height="64" rx="15" fill="url(#crateGloss)"/>
+<rect x="225" y="253" width="62" height="62" rx="14" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="2"/>
+<line x1="176" y1="331" x2="212" y2="196" stroke="url(#leafL)" stroke-width="42" stroke-linecap="round"/>
+<line x1="336" y1="331" x2="300" y2="196" stroke="url(#leafR)" stroke-width="42" stroke-linecap="round"/>
+<line x1="164" y1="314" x2="198" y2="206" stroke="#fff" stroke-opacity="0.38" stroke-width="6" stroke-linecap="round"/>
+<line x1="348" y1="314" x2="314" y2="206" stroke="#fff" stroke-opacity="0.2" stroke-width="6" stroke-linecap="round"/>
+<circle cx="176" cy="331" r="18" fill="#132552"/><circle cx="176" cy="331" r="8" fill="#b9d4ff"/>
+<circle cx="336" cy="331" r="18" fill="#132552"/><circle cx="336" cy="331" r="8" fill="#b9d4ff"/>
+<circle cx="212" cy="196" r="26" fill="#fed867" opacity="0.6" filter="url(#halo)"/>
+<circle cx="212" cy="196" r="9" fill="#fff4cf"/>
+<circle cx="300" cy="196" r="26" fill="#3fd6cf" opacity="0.6" filter="url(#halo)"/>
+<circle cx="300" cy="196" r="9" fill="#dcfffb"/>
+<path d="M 206 446 q 12.5 -9 25 0 t 25 0 t 25 0 t 25 0" fill="none" stroke="#5f95ff" stroke-opacity="0.45" stroke-width="7" stroke-linecap="round"/>
+<path d="M 226 470 q 7.5 -6 15 0 t 15 0 t 15 0 t 15 0" fill="none" stroke="#5f95ff" stroke-opacity="0.25" stroke-width="6" stroke-linecap="round"/>
+<rect width="512" height="512" rx="116" fill="url(#sheen)"/>
+<rect x="1" y="1" width="510" height="510" rx="115" fill="none" stroke="#fff" stroke-opacity="0.08" stroke-width="2"/>
 </svg>
