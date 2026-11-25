@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.14.1...v1.15.0) (2026-11-25)
+
+
+### Features
+
+* **brand:** the icon is the new OpenBridge bridge with a plugin crate passing through ([2de67b1](https://github.com/nubisco/openbridge-marketplace/commit/2de67b1a5a39fb0e3e88c5f9354dfd0551d58675))
+
 ## [1.14.1](https://github.com/nubisco/openbridge-marketplace/compare/v1.14.0...v1.14.1) (2026-10-23)
 
 
