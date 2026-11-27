@@ -1,3 +1,10 @@
+## [1.15.1](https://github.com/nubisco/openbridge-marketplace/compare/v1.15.0...v1.15.1) (2026-11-27)
+
+
+### Bug Fixes
+
+* **reviews:** posts belong to the Accord account, not the email address ([0e51028](https://github.com/nubisco/openbridge-marketplace/commit/0e510281c666a665c8f9364a48b4b79ada006f62))
+
 # [1.15.0](https://github.com/nubisco/openbridge-marketplace/compare/v1.14.1...v1.15.0) (2026-11-25)
 
 
