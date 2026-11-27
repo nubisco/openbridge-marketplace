@@ -6,6 +6,7 @@ import { sql, initDb } from './db'
 import { crawl, syncSinglePlugin } from './crawler'
 import { verifyPlatformToken, rateLimit } from './auth'
 import { redactQueryCredentials } from './log'
+import { claimLegacyAuthorship, upsertReview } from './authorship'
 import type {
   PluginListResponse,
   PluginDetailResponse,
@@ -382,15 +383,8 @@ app.post('/api/plugins/:name{.+}/reviews', async (c) => {
 
   const vote = body.vote as 1 | -1
 
-  const [review] = await sql<Review[]>`
-    INSERT INTO reviews (plugin_name, author_email_hash, author_display, vote, body)
-    VALUES (${name}, ${user.sub}, ${user.display}, ${vote}, ${reviewBody ?? null})
-    ON CONFLICT (plugin_name, author_email_hash) DO UPDATE
-      SET vote       = EXCLUDED.vote,
-          body       = EXCLUDED.body,
-          updated_at = NOW()
-    RETURNING id, plugin_name, author_display, vote, body, helpful_count, created_at, updated_at
-  `
+  // One review per person per plugin, keyed on the Accord account. See server/authorship.ts.
+  const review = await upsertReview(sql, user, { pluginName: name, vote, body: reviewBody ?? null })
 
   return c.json({ ...review, replies: [] }, 201)
 })
@@ -408,9 +402,10 @@ app.post('/api/reviews/:id/replies', async (c) => {
   const replyBody = str(body?.body, 1000)
   if (!replyBody) return c.json({ error: 'invalid_input' }, 400)
 
+  await claimLegacyAuthorship(sql, user)
   const [reply] = await sql<ReviewReply[]>`
-    INSERT INTO review_replies (review_id, author_email_hash, author_display, body)
-    VALUES (${reviewId}::uuid, ${user.sub}, ${user.display}, ${replyBody})
+    INSERT INTO review_replies (review_id, author_sub, author_email_hash, author_display, body)
+    VALUES (${reviewId}::uuid, ${user.sub}, ${user.emailHash}, ${user.display}, ${replyBody})
     RETURNING id, review_id, author_display, body, created_at
   `
   return c.json(reply, 201)
@@ -440,9 +435,10 @@ app.post('/api/plugins/:name{.+}/questions', async (c) => {
   const questionBody = str(body?.body, 1000)
   if (!questionBody) return c.json({ error: 'invalid_input' }, 400)
 
+  await claimLegacyAuthorship(sql, user)
   const [q] = await sql<Question[]>`
-    INSERT INTO questions (plugin_name, author_email_hash, author_display, body)
-    VALUES (${name}, ${user.sub}, ${user.display}, ${questionBody})
+    INSERT INTO questions (plugin_name, author_sub, author_email_hash, author_display, body)
+    VALUES (${name}, ${user.sub}, ${user.emailHash}, ${user.display}, ${questionBody})
     RETURNING id, plugin_name, author_display, body, created_at
   `
   return c.json({ ...q, answers: [] }, 201)
@@ -461,9 +457,10 @@ app.post('/api/questions/:id/answers', async (c) => {
   const answerBody = str(body?.body, 2000)
   if (!answerBody) return c.json({ error: 'invalid_input' }, 400)
 
+  await claimLegacyAuthorship(sql, user)
   const [answer] = await sql<QuestionAnswer[]>`
-    INSERT INTO question_answers (question_id, author_email_hash, author_display, body)
-    VALUES (${questionId}::uuid, ${user.sub}, ${user.display}, ${answerBody})
+    INSERT INTO question_answers (question_id, author_sub, author_email_hash, author_display, body)
+    VALUES (${questionId}::uuid, ${user.sub}, ${user.emailHash}, ${user.display}, ${answerBody})
     RETURNING id, question_id, author_display, body, is_accepted, created_at
   `
   return c.json(answer, 201)

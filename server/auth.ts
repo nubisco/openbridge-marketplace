@@ -7,7 +7,14 @@ export function hashValue(value: string): string {
 }
 
 export interface AuthPayload {
-  sub: string // email hash — never plain email
+  /** Accord's account id. Stable when the person changes their email address, and what owns a post. */
+  sub: string
+  /**
+   * SHA-256 of the lower-cased email address. Only used to recognise rows written
+   * before posts carried a sub, so their author can claim them. Never decides
+   * ownership of a row that already has a sub.
+   */
+  emailHash: string
   email: string
   display: string
   role: string
@@ -117,6 +124,7 @@ async function _verifyPlatformJwt(
   if (
     typeof claims.email !== 'string' ||
     typeof claims.sub !== 'string' ||
+    claims.sub.length === 0 ||
     typeof claims.app !== 'string' ||
     typeof claims.role !== 'string' ||
     claims.exp < Math.floor(Date.now() / 1000) ||
@@ -130,8 +138,9 @@ async function _verifyPlatformJwt(
 /**
  * Verify a Nubisco Platform JWT and return an AuthPayload compatible with the
  * existing local auth format.
- * - sub: SHA-256 hash of the user's email (never exposed)
- * - display: username portion of the email
+ * - sub: Accord's account id, which owns everything the person posts (never exposed)
+ * - emailHash: SHA-256 of the email, for claiming rows written before sub was stored (never exposed)
+ * - display: the account's name, or the username portion of the email
  */
 export async function verifyPlatformToken(token: string): Promise<AuthPayload | null> {
   const issuer = process.env.PLATFORM_ISSUER
@@ -148,7 +157,8 @@ export async function verifyPlatformToken(token: string): Promise<AuthPayload | 
     typeof claims.name === 'string' && claims.name.trim().length > 0 ? claims.name.trim() : email.split('@')[0]
 
   return {
-    sub: hashValue(email),
+    sub: claims.sub,
+    emailHash: hashValue(email),
     email,
     display,
     role: claims.role,
