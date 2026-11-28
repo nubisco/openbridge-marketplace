@@ -1,3 +1,10 @@
+## [1.15.2](https://github.com/nubisco/openbridge-marketplace/compare/v1.15.1...v1.15.2) (2026-11-28)
+
+
+### Bug Fixes
+
+* **auth:** a person removed or deactivated in Accord can no longer post ([b25d533](https://github.com/nubisco/openbridge-marketplace/commit/b25d53354cc9cb182c99948146996b8107ca25fd))
+
 ## [1.15.1](https://github.com/nubisco/openbridge-marketplace/compare/v1.15.0...v1.15.1) (2026-11-27)
 
 
