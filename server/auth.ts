@@ -19,6 +19,8 @@ export interface AuthPayload {
   display: string
   role: string
   app: string
+  /** When Accord issued the token, in seconds. Compared with when Accord disabled the account. */
+  iat?: number
 }
 
 // ── In-memory rate limiter ─────────────────────────────────────────────────────
@@ -86,6 +88,7 @@ async function _verifyPlatformJwt(
   app: string
   role: string
   name?: string | null
+  iat?: number
 } | null> {
   const parts = token.split('.')
   if (parts.length !== 3) return null
@@ -120,6 +123,7 @@ async function _verifyPlatformJwt(
     app: string
     role: string
     name?: string | null
+    iat?: number
   }
   if (
     typeof claims.email !== 'string' ||
@@ -163,5 +167,6 @@ export async function verifyPlatformToken(token: string): Promise<AuthPayload | 
     display,
     role: claims.role,
     app: claims.app,
+    iat: typeof claims.iat === 'number' ? claims.iat : undefined,
   }
 }

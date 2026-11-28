@@ -30,6 +30,11 @@ services:
       PLATFORM_ISSUER: ${PLATFORM_ISSUER}
       # Optional: platform app slug for marketplace access tokens
       PLATFORM_APP_ID: ${PLATFORM_APP_ID:-marketplace}
+      # Signs Accord's webhook deliveries. Register
+      # https://marketplace.openbridge.nubisco.io/api/platform/webhook with this secret on the
+      # openbridge-marketplace app in Accord. A person removed or deactivated there can then
+      # no longer post. Unset, the route answers 404.
+      PLATFORM_WEBHOOK_SECRET: ${PLATFORM_WEBHOOK_SECRET:-}
       # Optional: override admin secret for /api/admin/sync
       ADMIN_SECRET: ${ADMIN_SECRET}
       CRAWLER_SCHEDULE: ${CRAWLER_SCHEDULE:-0 */6 * * *}

@@ -151,4 +151,15 @@ export const schema = /* sql */ `
   CREATE INDEX IF NOT EXISTS idx_question_answers_unclaimed ON question_answers (author_email_hash) WHERE author_sub IS NULL;
   CREATE INDEX IF NOT EXISTS idx_plugins_downloads ON plugins (weekly_downloads DESC);
   CREATE INDEX IF NOT EXISTS idx_plugins_synced ON plugins (synced_at);
+
+  -- Accord accounts Accord removed from the marketplace or deactivated
+  -- (server/accord.ts). tokens_before is the cut-off: an Accord token issued
+  -- up to a minute after it is refused. disabled_at is NULL once Accord lets
+  -- the person back in, and the cut-off stays, so a token from before the
+  -- disable stays refused. Nothing the person wrote is touched.
+  CREATE TABLE IF NOT EXISTS accord_disabled (
+    sub           TEXT PRIMARY KEY,
+    disabled_at   TIMESTAMPTZ,
+    tokens_before TIMESTAMPTZ NOT NULL
+  );
 `

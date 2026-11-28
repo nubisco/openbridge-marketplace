@@ -7,6 +7,7 @@ import { crawl, syncSinglePlugin } from './crawler'
 import { verifyPlatformToken, rateLimit } from './auth'
 import { redactQueryCredentials } from './log'
 import { claimLegacyAuthorship, upsertReview } from './authorship'
+import { admitToken, handleAccordDelivery } from './accord'
 import type {
   PluginListResponse,
   PluginDetailResponse,
@@ -46,8 +47,24 @@ async function requireAuth(c: { req: { header: (k: string) => string | undefined
   const auth = c.req.header('Authorization') ?? ''
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : ''
   if (!token) return null
-  return verifyPlatformToken(token)
+  const payload = await verifyPlatformToken(token)
+  if (!payload) return null
+  // Refused when Accord removed or deactivated the account and this token is
+  // from before that (server/accord.ts).
+  return (await admitToken(sql, payload.sub, payload.iat)) ? payload : null
 }
+
+// ── Accord's webhook ──────────────────────────────────────────────────────────
+// Registered in Accord as the marketplace app's webhook URL, signed with the
+// secret in PLATFORM_WEBHOOK_SECRET. Unset, the route answers as if absent.
+app.post('/api/platform/webhook', async (c) => {
+  const secret = process.env.PLATFORM_WEBHOOK_SECRET
+  if (!secret) return c.json({ error: 'not_found' }, 404)
+  // The exact bytes Accord signed, before any parsing.
+  const raw = await c.req.text()
+  const result = await handleAccordDelivery(sql, secret, raw, c.req.header('X-Nubisco-Signature'))
+  return c.json(result.body, result.status)
+})
 
 // ── Validation helpers ────────────────────────────────────────────────────────
 function isValidVote(v: unknown): v is 1 | -1 {
